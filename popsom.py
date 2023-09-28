@@ -70,7 +70,7 @@ class map:
 
 			f_ind = list(self.data).index(marginal)
 			f_name = marginal
-			train = np.matrix(self.data)[:, f_ind]
+			train = np.array(self.data)[:, f_ind]
 			neurons = self.neurons[:, f_ind]
 			plt.ylabel('Density')
 			plt.xlabel(f_name)
@@ -86,7 +86,7 @@ class map:
 
 			f_ind = marginal
 			f_name = list(self.data)[marginal]
-			train = np.matrix(self.data)[:, f_ind]
+			train = np.array(self.data)[:, f_ind]
 			neurons = self.neurons[:, f_ind]
 			plt.ylabel('Density')
 			plt.xlabel(f_name)
@@ -140,7 +140,7 @@ class map:
 		m = [i for i in range(nr)]  # a vector with all neuron 1D addresses
 
 	    # x-y coordinate of ith neuron: m2Ds[i,] = c(xi, yi)
-		m2Ds = np.matrix.transpose(coord2D(m).reshape(2, nr))
+		m2Ds = np.transpose(coord2D(m).reshape(2, nr))
 
 	    # neighborhood function
 		def Gamma(c):
@@ -266,7 +266,7 @@ class map:
 
 		x = self.xdim
 		y = self.ydim
-		heat = np.matrix([[0.0] * y for _ in range(x)])
+		heat = np.array([[0.0] * y for _ in range(x)])
 
 		if x == 1 or y == 1:
 			sys.exit("compute_heat: heat map can not be computed for a map \
@@ -416,7 +416,7 @@ class map:
 		x = self.xdim
 		y = self.ydim
 		nobs = self.data.shape[0]
-		count = np.matrix([[0]*y]*x)
+		count = np.array([[0]*y]*x)
 
 		# need to make sure the map doesn't have a dimension of 1
 		if (x <= 1 or y <= 1):
@@ -426,7 +426,7 @@ class map:
 		tmp = pd.cut(heat_tmp, bins=100, labels=False)
 		tmp = np.reshape(tmp, (-1, y))				# Convert 1D Array to 2D
 		
-		tmp_1 = np.array(np.matrix.transpose(tmp))
+		tmp_1 = np.array(np.transpose(tmp))
 		
 		fig, ax = plt.subplots()
 		ax.pcolor(tmp_1, cmap=plt.cm.YlOrRd)
@@ -503,10 +503,10 @@ class map:
 
 		xdim = self.xdim
 		ydim = self.ydim
-		centroid_x = np.matrix([[-1] * ydim for _ in range(xdim)])
-		centroid_y = np.matrix([[-1] * ydim for _ in range(xdim)])
+		centroid_x = np.array([[-1] * ydim for _ in range(xdim)])
+		centroid_y = np.array([[-1] * ydim for _ in range(xdim)])
 
-		heat = np.matrix(heat)
+		heat = np.array(heat)
 
 		def compute_centroid(ix, iy):
 			# recursive function to find the centroid of a point on the map
@@ -854,7 +854,7 @@ class map:
 			cy = centroids_y_positions[i]
 
 			# compute the average distance
-			distance = self.cluster_spread(cx, cy, np.matrix(heat), centroids)
+			distance = self.cluster_spread(cx, cy, np.array(heat), centroids)
 
 			# append the computed distance to the list of distances
 			within.append(distance)
@@ -915,7 +915,7 @@ class map:
 
 		columns = tmp_1.shape[1]
 
-		tmp = np.matrix.transpose(np.array(list(combinations([i for i in range(columns)], 2))))
+		tmp = np.transpose(np.array(list(combinations([i for i in range(columns)], 2))))
 
 		tmp_3 = np.zeros(shape=(tmp_1.shape[0], tmp.shape[1]))
 
@@ -981,13 +981,13 @@ class map:
 				cy = centroids['centroid_y'][xi, yi]
 
 				if(cx == centroid_x and cy == centroid_y):
-					cweight = np.matrix(umat)[xi, yi]
+					cweight = np.array(umat)[xi, yi]
 					cluster_list.append(cweight)
 
 		return cluster_list
 
 	def combine_decision(self, within_cluster_dist, distance_between_clusters, rang):
-		""" combine_decision -- A function that produces a boolean matrix
+		""" combine_decision -- A function that produces a boolean array
 		                        representing which clusters should be combined.
 		
 			parameters:
@@ -999,7 +999,7 @@ class map:
 		inter_cluster = distance_between_clusters
 		centroid_dist = within_cluster_dist
 		dim = inter_cluster.shape[1]
-		to_combine = np.matrix([[False]*dim]*dim)
+		to_combine = np.array([[False]*dim]*dim)
 
 		for xi in range(dim):
 			for yi in range(dim):
@@ -1467,13 +1467,13 @@ class map:
 				for j in range(M):
 					xg.extend([[j, i]])
 
-			xg = np.matrix(xg)
+			xg = np.array(xg)
 
 			center = []
 			center.append([int(dx * M/2-1), int((dy * N)/2-1)])
 
-			out = exp_cov(xg, np.matrix(center),theta=theta)
-			out = np.matrix.transpose(np.reshape(out, (N, M)))
+			out = exp_cov(xg, np.array(center),theta=theta)
+			out = np.transpose(np.reshape(out, (N, M)))
 			temp = np.zeros((M, N))
 			temp[int(M/2-1)][int(N/2-1)] = 1
 
