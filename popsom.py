@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use('agg')
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns					
 from random import randint
