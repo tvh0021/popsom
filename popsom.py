@@ -21,7 +21,6 @@ class map:
 			- xdim,ydim - the dimensions of the map
 			- alpha - the learning rate, should be a positive non-zero real number
 			- train - number of training iterations
-			- algorithm - selection switch (som and som_f)
 			- norm - normalize the input data space
     	"""
 		self.xdim = xdim
@@ -30,17 +29,24 @@ class map:
 		self.train = train
 		self.norm = norm
 
-	def fit(self, data, labels):
+	def fit(self, data, labels, restart=False, neurons=None):
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
 			- data - a dataframe where each row contains an unlabeled training instance
 			- labels - a vector or dataframe with one label for each observation in data
+			- restart - a flag that determines whether fit starts with non-randomized values of neurons
+			- neurons - vectors for the weights of the neurons from past realizations
     	"""
 
 		if self.norm:
 			data = data.div(data.sum(axis=1), axis=0)
 			
+		self.restart = restart
+		
+		if self.restart:
+			self.restart_neurons  = neurons
+
 		self.data = data	
 		self.labels = labels
 
@@ -112,14 +118,17 @@ class map:
 		nr = self.xdim*self.ydim
 		nc = dc  # dim of data and neurons is the same
 
-	    # build and initialize the matrix holding the neurons
-		cells = nr * nc  # No. of neurons times number of data dimensions
+		if self.restart:
+			neurons = self.restart_neurons
+		else:
+			# build and initialize the matrix holding the neurons
+			cells = nr * nc  # No. of neurons times number of data dimensions
 
-	    # vector with small init values for all neurons
-		v = np.random.uniform(-1, 1, cells)
+			# vector with small init values for all neurons
+			v = np.random.uniform(-1, 1, cells)
 
-	    # NOTE: each row represents a neuron, each column represents a dimension.
-		neurons = np.transpose(np.reshape(v, (nc, nr)))  # rearrange the vector as matrix
+			# NOTE: each row represents a neuron, each column represents a dimension.
+			neurons = np.transpose(np.reshape(v, (nc, nr)))  # rearrange the vector as matrix
 
 		# neurons = np.reshape(v, (nr, nc)) # Another option to reshape
 
@@ -1427,6 +1436,11 @@ class map:
 
 		ix = self.rowix(x, y)
 		return self.neurons[ix]
+	
+	def all_neurons(self):
+		""" all_neurons -- returns the entire neuron maps to load into next step
+		"""
+		return self.neurons
 
 	def coordinate(self, rowix):
 		""" coordinate -- convert from a row index to a map xy-coordinate  """
