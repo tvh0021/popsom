@@ -63,6 +63,27 @@ class map:
 			visual.extend([b])
 
 		self.visual = visual
+
+	def fit_notraining(self, data, labels, neurons):
+		"""fit_notraining -- Provided an array of neurons, load best-fit data into the class
+
+		Args:
+			data (pandas DataFrame): data with features as columns
+			labels (list): list of range from 0 to number of points in data
+			neurons (numpy 3d array): xdim x ydim x feature array of neurons
+		"""
+
+		self.data = data
+		self.labels = labels
+		self.neurons = neurons
+
+		visual = []
+		
+		for i in range(self.data.shape[0]):
+			b = self.best_match(self.data.iloc[[i]])
+			visual.extend([b])
+
+		self.visual = visual
 		
 	def marginal(self, marginal):
 		""" marginal -- plot that shows the marginal probability distribution of the neurons and data
@@ -168,7 +189,7 @@ class map:
 	    # training #
 	    # the epochs loop
 		
-		self.animation = []
+		self.animation = [] # what is this even for??
 
 		for epoch in range(self.train):
 
