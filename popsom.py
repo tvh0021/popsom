@@ -81,7 +81,7 @@ class map:
 		
 		print("Begin matching points with neuron", flush=True)
 		for i in range(self.data.shape[0]):
-			if i % 1000 == 0:
+			if i % int(1e6) == 0:
 				print(f"i = {i}", flush=True)
 			b = self.best_match(self.data.iloc[[i]])
 			visual.extend([b])
