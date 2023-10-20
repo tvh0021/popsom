@@ -13,8 +13,8 @@ from scipy import stats                 # KS Test
 from scipy.stats import f               # F-test
 from itertools import combinations
 
-import multiprocessing
-from joblib import Parallel, delayed
+import multiprocessing as mp
+# from joblib import Parallel, delayed
 from tqdm import tqdm
 
 class map:
@@ -64,10 +64,18 @@ class map:
 		print("Begin matching points with neuron", flush=True)
 
 		if parallel == True:
-			num_threads = multiprocessing.cpu_count()
+			num_threads = mp.cpu_count()
 			print(f"{num_threads} threads are available", flush=True)
 
-			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
+			# define a function to calculate the best match for a single observation
+			def single_best_match(i):
+				return self.best_match(self.data.iloc[[i]])
+			
+			# create a Pool with the number of threads
+			with mp.Pool(num_threads) as pool:
+				visual = np.array(list(tqdm(pool.imap(single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
+
+			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
 			visual = np.zeros(self.data.shape[0])
 			for i in range(self.data.shape[0]):
@@ -95,10 +103,18 @@ class map:
 		print("Begin matching points with neuron", flush=True)
 
 		if parallel == True:
-			num_threads = multiprocessing.cpu_count()
+			num_threads = mp.cpu_count()
 			print(f"{num_threads} threads are available", flush=True)
 
-			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
+			# define a function to calculate the best match for a single observation
+			def single_best_match(i):
+				return self.best_match(self.data.iloc[[i]])
+			
+			# create a Pool with the number of threads
+			with mp.Pool(num_threads) as pool:
+				visual = np.array(list(tqdm(pool.imap(single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
+
+			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
 			visual = np.zeros(self.data.shape[0])
 			for i in range(self.data.shape[0]):
