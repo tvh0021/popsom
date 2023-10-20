@@ -1383,7 +1383,7 @@ class map:
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
-		diff = self.neurons - obs
+		diff = self.neurons - np.array(obs)
 		squ = diff ** 2
 		s = np.sum(squ, axis=1)
 
