@@ -15,6 +15,7 @@ from itertools import combinations
 
 import multiprocessing
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 class map:
 	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, norm=False):
@@ -64,9 +65,9 @@ class map:
 
 		if parallel == True:
 			num_threads = multiprocessing.cpu_count()
-			print(f"{num_threads} threads are available")
+			print(f"{num_threads} threads are available", flush=True)
 
-			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in range(self.data.shape[0])]))
+			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
 			visual = np.zeros(self.data.shape[0])
 			for i in range(self.data.shape[0]):
@@ -95,9 +96,9 @@ class map:
 
 		if parallel == True:
 			num_threads = multiprocessing.cpu_count()
-			print(f"{num_threads} threads are available")
+			print(f"{num_threads} threads are available", flush=True)
 
-			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in range(self.data.shape[0])]))
+			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
 			visual = np.zeros(self.data.shape[0])
 			for i in range(self.data.shape[0]):
@@ -1382,18 +1383,16 @@ class map:
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
-	   	# NOTE: replicate obs so that there are nr rows of obs
-		obs_m = np.tile(obs, (self.neurons.shape[0], 1))
-		diff = self.neurons - obs_m
-		squ = diff * diff
+		diff = self.neurons - obs
+		squ = diff ** 2
 		s = np.sum(squ, axis=1)
-		d = np.sqrt(s)
-		o = np.argsort(d)
 
 		if full:
+			d = np.sqrt(s)
+			o = np.argsort(d)
 			return o
 		else:
-			return o[0]
+			return np.argmin(s)
 
 	def significance(self, graphics=True, feature_labels=False):
 		""" significance -- compute the relative significance of each feature and plot it
