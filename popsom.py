@@ -13,6 +13,9 @@ from scipy import stats                 # KS Test
 from scipy.stats import f               # F-test
 from itertools import combinations
 
+import multiprocessing
+from joblib import Parallel, delayed
+
 class map:
 	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, norm=False):
 		""" __init__ -- Initialize the Model 
@@ -29,7 +32,7 @@ class map:
 		self.train = train
 		self.norm = norm
 
-	def fit(self, data, labels, restart=False, neurons=None):
+	def fit(self, data, labels, restart=False, neurons=None, parallel=False):
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
@@ -37,6 +40,7 @@ class map:
 			- labels - a vector or dataframe with one label for each observation in data
 			- restart - a flag that determines whether fit starts with non-randomized values of neurons
 			- neurons - vectors for the weights of the neurons from past realizations
+			- parallel - indicate whether to use multiple threads to find best fit neurons
     	"""
 
 		if self.norm:
@@ -56,35 +60,51 @@ class map:
 
 		self.vsom_p()
 
-		visual = []
+		print("Begin matching points with neuron", flush=True)
 
-		for i in range(self.data.shape[0]):
-			b = self.best_match(self.data.iloc[[i]])
-			visual.extend([b])
+		if parallel == True:
+			num_threads = multiprocessing.cpu_count()
+			print(f"{num_threads} threads are available")
+
+			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in range(self.data.shape[0])]))
+		else:
+			visual = np.zeros(self.data.shape[0])
+			for i in range(self.data.shape[0]):
+				if i % int(1e6) == 0:
+					print(f"i = {i}", flush=True)
+
+				visual[i] = self.best_match(self.data.iloc[[i]])
 
 		self.visual = visual
 
-	def fit_notraining(self, data, labels, neurons):
+	def fit_notraining(self, data, labels, neurons, parallel=False):
 		"""fit_notraining -- Provided an array of neurons, load best-fit data into the class
 
 		Args:
 			data (pandas DataFrame): data with features as columns
 			labels (list): list of range from 0 to number of points in data
 			neurons (numpy 3d array): xdim x ydim x feature array of neurons
+			parallel (bool): indicate whether to use multiple threads to find best fit neurons
 		"""
 
 		self.data = data
 		self.labels = labels
 		self.neurons = neurons
-
-		visual = []
 		
 		print("Begin matching points with neuron", flush=True)
-		for i in range(self.data.shape[0]):
-			if i % int(1e6) == 0:
-				print(f"i = {i}", flush=True)
-			b = self.best_match(self.data.iloc[[i]])
-			visual.extend([b])
+
+		if parallel == True:
+			num_threads = multiprocessing.cpu_count()
+			print(f"{num_threads} threads are available")
+
+			visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in range(self.data.shape[0])]))
+		else:
+			visual = np.zeros(self.data.shape[0])
+			for i in range(self.data.shape[0]):
+				if i % int(1e6) == 0:
+					print(f"i = {i}", flush=True)
+
+				visual[i] = self.best_match(self.data.iloc[[i]])
 
 		self.visual = visual
 		
