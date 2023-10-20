@@ -66,14 +66,10 @@ class map:
 		if parallel == True:
 			num_threads = mp.cpu_count()
 			print(f"{num_threads} threads are available", flush=True)
-
-			# define a function to calculate the best match for a single observation
-			def single_best_match(i):
-				return self.best_match(self.data.iloc[[i]])
 			
 			# create a Pool with the number of threads
 			with mp.Pool(num_threads) as pool:
-				visual = np.array(list(tqdm(pool.imap(single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
+				visual = np.array(list(tqdm(pool.imap(self.single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
 
 			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
@@ -105,14 +101,10 @@ class map:
 		if parallel == True:
 			num_threads = mp.cpu_count()
 			print(f"{num_threads} threads are available", flush=True)
-
-			# define a function to calculate the best match for a single observation
-			def single_best_match(i):
-				return self.best_match(self.data.iloc[[i]])
 			
 			# create a Pool with the number of threads
 			with mp.Pool(num_threads) as pool:
-				visual = np.array(list(tqdm(pool.imap(single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
+				visual = np.array(list(tqdm(pool.imap(self.single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
 
 			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
@@ -1396,6 +1388,10 @@ class map:
 		else:
 			return 0
 
+	# define a function to calculate the best match for a single observation
+	def single_best_match(self, i):
+		return self.best_match(self.data.iloc[[i]])
+	
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
