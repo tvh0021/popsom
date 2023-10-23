@@ -1404,9 +1404,9 @@ class map:
 		""" best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron """
 
 		if full:
-			best_match_neuron = np.zeros((obs.shape[0], neurons.shape[0]), dtype=int)
+			best_match_neuron = np.zeros((obs.shape[0], neurons.shape[0]))
 		else:
-			best_match_neuron = np.zeros(obs.shape[0], dtype=int)
+			best_match_neuron = np.zeros(obs.shape[0])
 
 		for i in prange(obs.shape[0]):
 			if i % int(1e6) == 0:
