@@ -1405,10 +1405,11 @@ class map:
 	def single_best_match(self, i):
 		return {str(i): self.best_match(self.data.iloc[[i]])}
 	
-	@njit(parallel=True)
+	# @njit()
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
+		# for i
 		diff = self.neurons_array.to_numpy() - obs.to_numpy()
 		squ = diff ** 2
 		s = np.sum(squ, axis=1)
