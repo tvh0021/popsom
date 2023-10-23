@@ -1406,7 +1406,7 @@ class map:
 		if full:
 			best_match_neuron = np.zeros((obs.shape[0], 2))
 		else:
-			best_match_neuron = np.zeros(obs.shape[0])
+			best_match_neuron = np.zeros((obs.shape[0],1))
 
 		for i in prange(obs.shape[0]):
 			if i % int(1e6) == 0:
