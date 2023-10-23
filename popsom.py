@@ -1409,7 +1409,7 @@ class map:
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
-		diff = self.neurons_array - np.array(obs)
+		diff = self.neurons_array.to_numpy() - obs.to_numpy()
 		squ = diff ** 2
 		s = np.sum(squ, axis=1)
 
