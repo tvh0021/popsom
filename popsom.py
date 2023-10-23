@@ -15,7 +15,8 @@ from itertools import combinations
 
 import multiprocessing as mp
 # from joblib import Parallel, delayed
-from tqdm import tqdm
+# from tqdm import tqdm
+from numba import njit, prange
 
 class map:
 	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, norm=False):
@@ -62,6 +63,7 @@ class map:
 		self.vsom_p()
 
 		print("Begin matching points with neuron", flush=True)
+		visual = np.zeros(self.data.shape[0])
 
 		if parallel == True:
 			num_threads = mp.cpu_count()
@@ -69,11 +71,13 @@ class map:
 			
 			# create a Pool with the number of threads
 			with mp.Pool(num_threads) as pool:
-				visual = np.array(list(tqdm(pool.imap(self.single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
+				result = [pool.map_async(self.single_best_match, range(self.data.shape[0]))]
+			
+			for i in range(self.data.shape[0]):
+				visual[i] = result(str(i))
 
 			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
-			visual = np.zeros(self.data.shape[0])
 			for i in range(self.data.shape[0]):
 				if i % int(1e6) == 0:
 					print(f"i = {i}", flush=True)
@@ -104,11 +108,13 @@ class map:
 			
 			# create a Pool with the number of threads
 			with mp.Pool(num_threads) as pool:
-				visual = np.array(list(tqdm(pool.imap(self.single_best_match, range(self.data.shape[0]), chunksize=1), total=self.data.shape[0])))
-
-			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
+				result = [pool.map_async(self.single_best_match, range(self.data.shape[0]))]
+			
+			for i in range(self.data.shape[0]):
+				visual[i] = result(str(i))
 		else:
 			visual = np.zeros(self.data.shape[0])
+			@njit(parallel=True)
 			for i in range(self.data.shape[0]):
 				if i % int(1e6) == 0:
 					print(f"i = {i}", flush=True)
@@ -161,6 +167,7 @@ class map:
 			sys.exit("marginal: second argument is not the name of a training \
 						data frame dimension or index")
 
+	@njit(parallel=True)
 	def vsom_p(self):
 		""" vsom_p -- vectorized, unoptimized version of the stochastic SOM
         		 	  training algorithm written entirely in python
@@ -223,7 +230,7 @@ class map:
 		
 		self.animation = [] # what is this even for??
 
-		for epoch in range(self.train):
+		for epoch in prange(self.train):
 
 	        # hood size decreases in disrete nsize.steps
 			step_counter = step_counter + 1
@@ -314,6 +321,7 @@ class map:
 
 		return umat
 
+	@njit(parallel=True)
 	def compute_heat(self, d, smoothing=None):
 		""" compute_heat -- compute a heat value map representation of the given distance matrix
 			
@@ -343,8 +351,8 @@ class map:
 		# check if the map is larger than 2 x 2 (otherwise it is only corners)
 		if x > 2 and y > 2:
 			# iterate over the inner nodes and compute their umat values
-			for ix in range(1, x-1):
-				for iy in range(1, y-1):
+			for ix in prange(1, x-1):
+				for iy in prange(1, y-1):
 					sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 						   d[xl(ix, iy), xl(ix, iy-1)] +
 	                       d[xl(ix, iy), xl(ix+1, iy-1)] +
@@ -357,7 +365,7 @@ class map:
 					heat[ix, iy] = sum/8
 
 			# iterate over bottom x axis
-			for ix in range(1, x-1):
+			for ix in prange(1, x-1):
 				iy = 0
 				sum = (d[xl(ix, iy), xl(ix+1, iy)] +
 	                   d[xl(ix, iy), xl(ix+1, iy+1)] +
@@ -368,7 +376,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over top x axis
-			for ix in range(1, x-1):
+			for ix in prange(1, x-1):
 				iy = y-1
 				sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 	                   d[xl(ix, iy), xl(ix, iy-1)] +
@@ -379,7 +387,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over the left y-axis
-			for iy in range(1, y-1):
+			for iy in prange(1, y-1):
 				ix = 0
 				sum = (d[xl(ix, iy), xl(ix, iy-1)] +
 	                   d[xl(ix, iy), xl(ix+1, iy-1)] +
@@ -390,7 +398,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over the right y-axis
-			for iy in range(1, y-1):
+			for iy in prange(1, y-1):
 				ix = x-1
 				sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 	                   d[xl(ix, iy), xl(ix, iy-1)] +
@@ -435,12 +443,13 @@ class map:
 	               d[xl(ix, iy), xl(ix-1, iy)])
 			heat[ix, iy] = sum/3
 
-		# smooth the heat map
-		pts = []
+		# # smooth the heat map WHY????
+		# pts = np.zeros((x*y, 2))
 
-		for i in range(y):
-			for j in range(x):
-				pts.extend([[j, i]])
+		# for i in prange(y):
+		# 	for j in prange(x):
+		# 		pts.extend([[j, i]])
+		# 		pts[i*j + j,:] = [j,i]
 
 		if smoothing is not None:
 			if smoothing == 0:
@@ -552,6 +561,7 @@ class map:
 
 		plt.show()
 
+	@njit(parallel=True)
 	def compute_centroids(self, heat, explicit=False):
 		""" compute_centroids -- compute the centroid for each point on the map
 		
@@ -836,8 +846,8 @@ class map:
 				centroid_y[ix, iy] = iy
 				return {"bestx": ix, "besty": iy}
 
-		for i in range(xdim):
-			for j in range(ydim):
+		for i in prange(xdim):
+			for j in prange(ydim):
 				compute_centroid(i, j)
 
 		return {"centroid_x": centroid_x, "centroid_y": centroid_y}
@@ -909,7 +919,7 @@ class map:
 
 		centroids_x_positions = unique_centroids['position_x']
 		centroids_y_positions = unique_centroids['position_y']
-		within = []
+		within = np.zeros(len(centroids_x_positions))
 
 		for i in range(len(centroids_x_positions)):
 			cx = centroids_x_positions[i]
@@ -919,10 +929,11 @@ class map:
 			distance = self.cluster_spread(cx, cy, np.array(heat), centroids)
 
 			# append the computed distance to the list of distances
-			within.append(distance)
+			within[i] = distance
 
 		return within
 
+	@njit(parallel=True)
 	def cluster_spread(self, x, y, umat, centroids):
 		""" cluster_spread -- Function to calculate the average distance in
 		                      one cluster given one centroid.
@@ -942,8 +953,8 @@ class map:
 		ydim = self.ydim
 		centroid_weight = umat[centroid_x, centroid_y]
 
-		for xi in range(xdim):
-			for yi in range(ydim):
+		for xi in prange(xdim):
+			for yi in prange(ydim):
 				cx = centroids['centroid_x'][xi, yi]
 				cy = centroids['centroid_y'][xi, yi]
 
@@ -956,6 +967,7 @@ class map:
 
 		return average
 
+	@njit(parallel=True)
 	def distance_between_clusters(self, centroids, unique_centroids, umat):
 		""" distance_between_clusters -- A function to compute the average pairwise
 		                                 distance between clusters.
@@ -971,8 +983,8 @@ class map:
 		tmp_1 = np.zeros(shape=(max([len(cluster_elements[i]) for i in range(
 				len(cluster_elements))]), len(cluster_elements)))
 
-		for i in range(len(cluster_elements)):
-			for j in range(len(cluster_elements[i])):
+		for i in prange(len(cluster_elements)):
+			for j in prange(len(cluster_elements[i])):
 				tmp_1[j, i] = cluster_elements[i][j]
 
 		columns = tmp_1.shape[1]
@@ -981,7 +993,7 @@ class map:
 
 		tmp_3 = np.zeros(shape=(tmp_1.shape[0], tmp.shape[1]))
 
-		for i in range(tmp.shape[1]):
+		for i in prange(tmp.shape[1]):
 			tmp_3[:, i] = np.where(tmp_1[:, tmp[1, i]]*tmp_1[:, tmp[0, i]] != 0,
 									abs(tmp_1[:, tmp[0, i]]-tmp_1[:, tmp[1, i]]), 0)
 	        # both are not equals 0
@@ -990,8 +1002,8 @@ class map:
 		index = 0
 		mat = np.zeros((columns, columns))
 
-		for xi in range(columns-1):
-			for yi in range(xi, columns-1):
+		for xi in prange(columns-1):
+			for yi in prange(xi, columns-1):
 				mat[xi, yi + 1] = mean[index]
 				mat[yi + 1, xi] = mean[index]
 				index = index + 1
@@ -1390,8 +1402,9 @@ class map:
 
 	# define a function to calculate the best match for a single observation
 	def single_best_match(self, i):
-		return self.best_match(self.data.iloc[[i]])
+		return {str(i): self.best_match(self.data.iloc[[i]])}
 	
+	@njit(parallel=True)
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
