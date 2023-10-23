@@ -228,7 +228,7 @@ class map:
 	    # training #
 	    # the epochs loop
 		
-		self.animation = [] # what is this even for??
+		# self.animation = [] # what is this even for??
 
 		for epoch in prange(self.train):
 
@@ -257,7 +257,7 @@ class map:
 			gamma_m = np.outer(Gamma(c), np.linspace(1, 1, nc))
 			neurons = neurons - diff * gamma_m
 
-			self.animation.append(neurons.tolist())
+			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
 		
