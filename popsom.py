@@ -99,6 +99,7 @@ class map:
 		self.data = data
 		self.labels = labels
 		self.neurons = neurons
+		self.neurons_array = neurons.to_numpy()
 		
 		print("Begin matching points with neuron", flush=True)
 
@@ -259,6 +260,7 @@ class map:
 			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
+		self.neurons_array = self.neurons.to_numpy()
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
 		""" convergence -- the convergence index of a map
@@ -1403,11 +1405,11 @@ class map:
 	def single_best_match(self, i):
 		return {str(i): self.best_match(self.data.iloc[[i]])}
 	
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
-		diff = self.neurons - np.array(obs)
+		diff = self.neurons_array - np.array(obs)
 		squ = diff ** 2
 		s = np.sum(squ, axis=1)
 
