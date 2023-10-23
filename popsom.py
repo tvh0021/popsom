@@ -114,7 +114,6 @@ class map:
 				visual[i] = result(str(i))
 		else:
 			visual = np.zeros(self.data.shape[0])
-			@njit(parallel=True)
 			for i in range(self.data.shape[0]):
 				if i % int(1e6) == 0:
 					print(f"i = {i}", flush=True)
