@@ -53,19 +53,23 @@ class map:
 		if self.restart:
 			self.restart_neurons  = neurons
 
-		self.data = data	
+		self.data = data
+		self.data_array = data.to_numpy()	
 		self.labels = labels
 
 		# check if the dims are reasonable
 		if (self.xdim < 3 or self.ydim < 3):
 			sys.exit("build: map is too small.")
 
+		# generate / train neuron map
 		self.vsom_p()
 
 		print("Begin matching points with neuron", flush=True)
-		visual = np.zeros(self.data.shape[0])
+		
 
 		if parallel == True:
+			visual = np.zeros(self.data.shape[0])
+
 			num_threads = mp.cpu_count()
 			print(f"{num_threads} threads are available", flush=True)
 			
@@ -75,14 +79,8 @@ class map:
 			
 			for i in range(self.data.shape[0]):
 				visual[i] = result(str(i))
-
-			# visual = np.array(Parallel(n_jobs=num_threads)([delayed(self.best_match)(self.data.iloc[[i]]) for i in tqdm(range(self.data.shape[0]))]))
 		else:
-			for i in range(self.data.shape[0]):
-				if i % int(1e6) == 0:
-					print(f"i = {i}", flush=True)
-
-				visual[i] = self.best_match(self.data.iloc[[i]])
+				visual = self.best_match(self.data_array)
 
 		self.visual = visual
 
@@ -97,9 +95,9 @@ class map:
 		"""
 
 		self.data = data
+		self.data_array = data.to_numpy()
 		self.labels = labels
 		self.neurons = neurons
-		self.neurons_array = neurons
 		
 		print("Begin matching points with neuron", flush=True)
 
@@ -109,17 +107,12 @@ class map:
 			
 			# create a Pool with the number of threads
 			with mp.Pool(num_threads) as pool:
-				result = [pool.map_async(self.single_best_match, range(self.data.shape[0]))]
+				result = [pool.map_async(self.single_best_match, range(self.data_array.shape[0]))]
 			
-			for i in range(self.data.shape[0]):
+			for i in range(self.data_array.shape[0]):
 				visual[i] = result(str(i))
 		else:
-			visual = np.zeros(self.data.shape[0])
-			for i in range(self.data.shape[0]):
-				if i % int(1e6) == 0:
-					print(f"i = {i}", flush=True)
-
-				visual[i] = self.best_match(self.data.iloc[[i]])
+			visual = self.best_match(self.data_array)
 
 		self.visual = visual
 		
@@ -173,8 +166,8 @@ class map:
         		 	  training algorithm written entirely in python
     	"""
     	# some constants
-		dr = self.data.shape[0]
-		dc = self.data.shape[1]
+		dr = self.data_array.shape[0]
+		dc = self.data_array.shape[1]
 		nr = self.xdim*self.ydim
 		nc = dc  # dim of data and neurons is the same
 
@@ -242,7 +235,7 @@ class map:
 	        # create a sample training vector
 			ix = randint(0, dr-1)
 			# ix = (epoch+1) % dr   # For Debugging
-			xk = self.data.iloc[[ix]]
+			xk = self.data_array[ix,:]
 
 	        # competitive step
 			xk_m = np.outer(np.linspace(1, 1, nr), xk)
@@ -260,7 +253,6 @@ class map:
 			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
-		self.neurons_array = self.neurons.to_numpy()
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
 		""" convergence -- the convergence index of a map
@@ -487,7 +479,7 @@ class map:
 
 		x = self.xdim
 		y = self.ydim
-		nobs = self.data.shape[0]
+		nobs = self.data_array.shape[0]
 		count = np.array([[0]*y]*x)
 
 		# need to make sure the map doesn't have a dimension of 1
@@ -1163,7 +1155,7 @@ class map:
 		map_df = self.neurons
 
 		# data_df is a dataframe that contain the training data
-		data_df = np.array(self.data)
+		data_df = self.data_array
 
 		nfeatures = map_df.shape[1]
 
@@ -1200,7 +1192,7 @@ class map:
 		map_df = self.neurons
 
 		# data_df is a dataframe that contain the training data
-		data_df = np.array(self.data)
+		data_df = self.data_array
 
 		def df_var_test(df1, df2, conf=.95):
 
@@ -1314,7 +1306,7 @@ class map:
 		
 
 		# data.df is a matrix that contains the training data
-		data_df = self.data
+		data_df = self.data_array
 
 		if (k > data_df.shape[0]):
 			sys.exit("topo: sample larger than training data.")
@@ -1323,9 +1315,9 @@ class map:
 
 		# compute the sum topographic accuracy - the accuracy of a single sample
 		# is 1 if the best matching unit is a neighbor otherwise it is 0
-		acc_v = []
+		acc_v = np.zeros(k)
 		for i in range(k):
-			acc_v.append(self.accuracy(data_df.iloc[data_sample_ix[i]-1], data_sample_ix[i]))
+			acc_v[i] = self.accuracy(data_df.iloc[data_sample_ix[i]-1], data_sample_ix[i])
 
 		# compute the confidence interval values using the bootstrap
 		if interval:
@@ -1403,25 +1395,33 @@ class map:
 
 	# define a function to calculate the best match for a single observation
 	def single_best_match(self, i):
-		return {str(i): self.best_match(self.data.iloc[[i]])}
+		return {str(i): self.best_match(self.data_array)}
 	
-	# @njit()
-	def best_match(self, obs, full=False):
-		""" best_match -- given observation obs, return the best matching neuron """
-
-		# for i
-		diff = self.neurons_array.to_numpy() - obs.to_numpy()
-		squ = diff ** 2
-		s = np.sum(squ, axis=1)
+	@njit()
+	def best_match(self, obs : np.ndarray, full=False):
+		""" best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron """
 
 		if full:
-			d = np.sqrt(s)
-			o = np.argsort(d)
-			return o
+			best_match_neuron = np.zeros((obs.shape[0], self.neurons.shape[0]), dtype=int)
 		else:
-			return np.argmin(s)
+			best_match_neuron = np.zeros(obs.shape[0], dtype=int)
 
-	def significance(self, graphics=True, feature_labels=False):
+		for i in prange(obs.shape[0]):
+			if i % int(1e6) == 0:
+				print("i = ", i)
+			diff = self.neurons - obs[i,:]
+			squ = diff ** 2
+			s = np.sum(squ, axis=1)
+
+			if full:
+				o = np.argsort(s)
+				best_match_neuron[i,:] = o
+			else:
+				best_match_neuron[i] = np.argmin(s)
+
+		return best_match_neuron
+
+	def significance(self, graphics=False, feature_labels=False):
 		""" significance -- compute the relative significance of each feature and plot it
 		
 			parameters:
