@@ -1424,7 +1424,7 @@ class map:
 				best_match_neuron[i] = np.argmin(s)
 
 			if i % int(1e6) == 0:
-				print("i = ", i, flush=True)
+				print("i = ", i)
 
 		return best_match_neuron
 
