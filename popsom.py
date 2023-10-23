@@ -1404,7 +1404,7 @@ class map:
 		""" best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron """
 
 		if full:
-			best_match_neuron = np.zeros((obs.shape[0], neurons.shape[0]))
+			best_match_neuron = np.zeros((obs.shape[0], 2))
 		else:
 			best_match_neuron = np.zeros(obs.shape[0])
 
@@ -1416,8 +1416,12 @@ class map:
 			s = np.sum(squ, axis=1)
 
 			if full:
-				o = np.argsort(s)
-				best_match_neuron[i,:] = o
+				# numba does not support argsort, so we record the top two best matches this way
+				o = np.argmin(s)
+				best_match_neuron[i,0] = o
+				s[o] = np.max(s)
+				o = np.argmin(s)
+				best_match_neuron[i,1] = o
 			else:
 				best_match_neuron[i] = np.argmin(s)
 
