@@ -18,6 +18,7 @@ import multiprocessing as mp
 # from tqdm import tqdm
 from numba import njit, prange
 
+# NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
 	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, norm=False):
 		""" __init__ -- Initialize the Model 
@@ -80,7 +81,7 @@ class map:
 			for i in range(self.data.shape[0]):
 				visual[i] = result(str(i))
 		else:
-				visual = self.best_match(self.data_array)
+				visual = self.best_match(self.neurons, self.data_array)
 
 		self.visual = visual
 
@@ -112,7 +113,7 @@ class map:
 			for i in range(self.data_array.shape[0]):
 				visual[i] = result(str(i))
 		else:
-			visual = self.best_match(self.data_array)
+			visual = self.best_match(self.neurons, self.data_array)
 
 		self.visual = visual
 		
@@ -223,7 +224,7 @@ class map:
 		
 		# self.animation = [] # what is this even for??
 
-		for epoch in prange(self.train):
+		for epoch in range(self.train):
 
 	        # hood size decreases in disrete nsize.steps
 			step_counter = step_counter + 1
@@ -344,8 +345,8 @@ class map:
 		# check if the map is larger than 2 x 2 (otherwise it is only corners)
 		if x > 2 and y > 2:
 			# iterate over the inner nodes and compute their umat values
-			for ix in prange(1, x-1):
-				for iy in prange(1, y-1):
+			for ix in range(1, x-1):
+				for iy in range(1, y-1):
 					sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 						   d[xl(ix, iy), xl(ix, iy-1)] +
 	                       d[xl(ix, iy), xl(ix+1, iy-1)] +
@@ -358,7 +359,7 @@ class map:
 					heat[ix, iy] = sum/8
 
 			# iterate over bottom x axis
-			for ix in prange(1, x-1):
+			for ix in range(1, x-1):
 				iy = 0
 				sum = (d[xl(ix, iy), xl(ix+1, iy)] +
 	                   d[xl(ix, iy), xl(ix+1, iy+1)] +
@@ -369,7 +370,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over top x axis
-			for ix in prange(1, x-1):
+			for ix in range(1, x-1):
 				iy = y-1
 				sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 	                   d[xl(ix, iy), xl(ix, iy-1)] +
@@ -380,7 +381,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over the left y-axis
-			for iy in prange(1, y-1):
+			for iy in range(1, y-1):
 				ix = 0
 				sum = (d[xl(ix, iy), xl(ix, iy-1)] +
 	                   d[xl(ix, iy), xl(ix+1, iy-1)] +
@@ -391,7 +392,7 @@ class map:
 				heat[ix, iy] = sum/5
 
 			# iterate over the right y-axis
-			for iy in prange(1, y-1):
+			for iy in range(1, y-1):
 				ix = x-1
 				sum = (d[xl(ix, iy), xl(ix-1, iy-1)] +
 	                   d[xl(ix, iy), xl(ix, iy-1)] +
@@ -439,8 +440,8 @@ class map:
 		# # smooth the heat map WHY????
 		# pts = np.zeros((x*y, 2))
 
-		# for i in prange(y):
-		# 	for j in prange(x):
+		# for i in range(y):
+		# 	for j in range(x):
 		# 		pts.extend([[j, i]])
 		# 		pts[i*j + j,:] = [j,i]
 
@@ -554,7 +555,7 @@ class map:
 
 		plt.show()
 
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def compute_centroids(self, heat, explicit=False):
 		""" compute_centroids -- compute the centroid for each point on the map
 		
@@ -839,8 +840,8 @@ class map:
 				centroid_y[ix, iy] = iy
 				return {"bestx": ix, "besty": iy}
 
-		for i in prange(xdim):
-			for j in prange(ydim):
+		for i in range(xdim):
+			for j in range(ydim):
 				compute_centroid(i, j)
 
 		return {"centroid_x": centroid_x, "centroid_y": centroid_y}
@@ -926,7 +927,7 @@ class map:
 
 		return within
 
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def cluster_spread(self, x, y, umat, centroids):
 		""" cluster_spread -- Function to calculate the average distance in
 		                      one cluster given one centroid.
@@ -946,8 +947,8 @@ class map:
 		ydim = self.ydim
 		centroid_weight = umat[centroid_x, centroid_y]
 
-		for xi in prange(xdim):
-			for yi in prange(ydim):
+		for xi in range(xdim):
+			for yi in range(ydim):
 				cx = centroids['centroid_x'][xi, yi]
 				cy = centroids['centroid_y'][xi, yi]
 
@@ -960,7 +961,7 @@ class map:
 
 		return average
 
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def distance_between_clusters(self, centroids, unique_centroids, umat):
 		""" distance_between_clusters -- A function to compute the average pairwise
 		                                 distance between clusters.
@@ -976,8 +977,8 @@ class map:
 		tmp_1 = np.zeros(shape=(max([len(cluster_elements[i]) for i in range(
 				len(cluster_elements))]), len(cluster_elements)))
 
-		for i in prange(len(cluster_elements)):
-			for j in prange(len(cluster_elements[i])):
+		for i in range(len(cluster_elements)):
+			for j in range(len(cluster_elements[i])):
 				tmp_1[j, i] = cluster_elements[i][j]
 
 		columns = tmp_1.shape[1]
@@ -986,7 +987,7 @@ class map:
 
 		tmp_3 = np.zeros(shape=(tmp_1.shape[0], tmp.shape[1]))
 
-		for i in prange(tmp.shape[1]):
+		for i in range(tmp.shape[1]):
 			tmp_3[:, i] = np.where(tmp_1[:, tmp[1, i]]*tmp_1[:, tmp[0, i]] != 0,
 									abs(tmp_1[:, tmp[0, i]]-tmp_1[:, tmp[1, i]]), 0)
 	        # both are not equals 0
@@ -995,8 +996,8 @@ class map:
 		index = 0
 		mat = np.zeros((columns, columns))
 
-		for xi in prange(columns-1):
-			for yi in prange(xi, columns-1):
+		for xi in range(columns-1):
+			for yi in range(xi, columns-1):
 				mat[xi, yi + 1] = mean[index]
 				mat[yi + 1, xi] = mean[index]
 				index = index + 1
@@ -1361,7 +1362,7 @@ class map:
 		             	and the second best matching unit are are neighbors otherwise it is 0
 		"""
 
-		o = self.best_match(sample, full=True)
+		o = self.best_match(self.neurons, sample, full=True)
 		best_ix = o[0]
 		second_best_ix = o[1]
 
@@ -1395,21 +1396,22 @@ class map:
 
 	# define a function to calculate the best match for a single observation
 	def single_best_match(self, i):
-		return {str(i): self.best_match(self.data_array)}
+		return {str(i): self.best_match(self.neurons, self.data_array)}
 	
-	@njit()
-	def best_match(self, obs : np.ndarray, full=False):
+	@staticmethod
+	@njit(parallel=True)
+	def best_match(neurons : np.ndarray, obs : np.ndarray, full=False):
 		""" best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron """
 
 		if full:
-			best_match_neuron = np.zeros((obs.shape[0], self.neurons.shape[0]), dtype=int)
+			best_match_neuron = np.zeros((obs.shape[0], neurons.shape[0]), dtype=int)
 		else:
 			best_match_neuron = np.zeros(obs.shape[0], dtype=int)
 
 		for i in prange(obs.shape[0]):
 			if i % int(1e6) == 0:
 				print("i = ", i)
-			diff = self.neurons - obs[i,:]
+			diff = neurons - obs[i,:]
 			squ = diff ** 2
 			s = np.sum(squ, axis=1)
 
