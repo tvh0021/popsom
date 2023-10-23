@@ -99,7 +99,7 @@ class map:
 		self.data = data
 		self.labels = labels
 		self.neurons = neurons
-		# self.neurons_array = neurons.to_numpy()
+		self.neurons_array = neurons
 		
 		print("Begin matching points with neuron", flush=True)
 
