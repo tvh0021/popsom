@@ -1405,7 +1405,7 @@ class map:
 	def single_best_match(self, i):
 		return {str(i): self.best_match(self.data.iloc[[i]])}
 	
-	# @njit(parallel=True)
+	@njit(parallel=True)
 	def best_match(self, obs, full=False):
 		""" best_match -- given observation obs, return the best matching neuron """
 
