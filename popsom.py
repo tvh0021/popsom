@@ -1409,8 +1409,6 @@ class map:
 			best_match_neuron = np.zeros((obs.shape[0],1))
 
 		for i in prange(obs.shape[0]):
-			if i % int(1e6) == 0:
-				print("i = ", i)
 			diff = neurons - obs[i,:]
 			squ = diff ** 2
 			s = np.sum(squ, axis=1)
@@ -1424,6 +1422,9 @@ class map:
 				best_match_neuron[i,1] = o
 			else:
 				best_match_neuron[i] = np.argmin(s)
+
+			if i % int(1e6) == 0:
+				print(f"i = {i}", flush=True)
 
 		return best_match_neuron
 
