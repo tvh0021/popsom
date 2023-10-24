@@ -1494,13 +1494,13 @@ class map:
 			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
 
-		ix = np.empty((len(self.visual),1))
-		for i in range(len(self.visual)):
-			ix[i,0] = self.visual[i]
+		# ix = np.empty((len(self.visual),1))
+		# for i in range(len(self.visual)):
+		# 	ix[i,0] = self.visual[i]
 
-		# visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
+		visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
 
-		data_matrix = self.coordinate(ix, self.xdim)
+		data_matrix = self.coordinate(visual_reshaped, self.xdim)
 
 		return data_matrix
 
