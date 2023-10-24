@@ -1432,7 +1432,7 @@ class map:
 			else:
 				best_match_neuron[i] = np.argmin(s)
 
-			if i % int(1e6) == 0:
+			if i % int(1e7) == 0:
 				print("i = ", i)
 
 		return best_match_neuron
@@ -1532,10 +1532,10 @@ class map:
 		"""
 
 		len_rowix = len(rowix)
-		coords = np.empty((len_rowix, 2))
+		coords = np.zeros((len_rowix, 2))
 
 		for k in prange(len_rowix):
-			coords[k,:] = [rowix[k,0] % xdim, rowix[k,0] // xdim]
+			coords[k,:] = np.array([rowix[k,0] % xdim, rowix[k,0] // xdim])
 
 		return coords
 
