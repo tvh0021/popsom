@@ -532,7 +532,7 @@ class map:
 			for i in range(nobs):
 
 				nix = self.visual[i]
-				c = self.coordinate(nix)
+				c = self.coordinate(np.array(nix), self.xdim) # NOTE: slow code
 				ix = c[0]
 				iy = c[1]
 
@@ -540,7 +540,7 @@ class map:
 
 			for i in range(nobs):
 
-				c = self.coordinate(self.visual[i])
+				c = self.coordinate(np.array(self.visual[i]), self.xdim) # NOTE: slow code
 				ix = c[0]
 				iy = c[1]
 
@@ -1367,12 +1367,12 @@ class map:
 		second_best_ix = o[1]
 
 		# sanity check
-		coord = self.coordinate(best_ix)
+		coord = self.coordinate(np.array(best_ix), self.xdim)
 		coord_x = coord[0]
 		coord_y = coord[1]
 
 		map_ix = self.visual[data_ix-1]
-		coord = self.coordinate(map_ix)
+		coord = self.coordinate(np.array(map_ix), self.xdim)
 		map_x = coord[0]
 		map_y = coord[1]
 
@@ -1380,8 +1380,8 @@ class map:
 			print("Error: best_ix: ", best_ix, " map_ix: ", map_ix, "\n")
 
 		# determine if the best and second best are neighbors on the map
-		best_xy = self.coordinate(best_ix)
-		second_best_xy = self.coordinate(second_best_ix)
+		best_xy = self.coordinate(np.array(best_ix), self.xdim)
+		second_best_xy = self.coordinate(np.array(second_best_ix), self.xdim)
 		diff_map = np.array(best_xy) - np.array(second_best_xy)
 		diff_map_sq = diff_map * diff_map
 		sum_map = np.sum(diff_map_sq)
@@ -1400,8 +1400,17 @@ class map:
 	
 	@staticmethod
 	@njit(parallel=True)
-	def best_match(neurons : np.ndarray, obs : np.ndarray, full=False):
-		""" best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron """
+	def best_match(neurons : np.ndarray, obs : np.ndarray, full=False) -> np.ndarray:
+		"""best_match -- given observation obs[n,f] (where n is number of different observations, f is number of features per observation), return the best matching neuron
+
+		Args:
+			neurons (np.ndarray): values of all the neurons from the map
+			obs (np.ndarray): observations
+			full (bool, optional): indicate whether to return first and second best match. Defaults to False.
+
+		Returns:
+			np.ndarray: return the 1d(2d) array of the best-matched neuron for each observation
+		"""
 
 		if full:
 			best_match_neuron = np.zeros((obs.shape[0], 2))
@@ -1478,27 +1487,16 @@ class map:
 		else:
 			return prob_v
 
-	def projection(self):
-		""" projection -- print the association of labels with map elements
-			
-			parameters:
-			
-			return values:
-			- a dataframe containing the projection onto the map for each observation
+	def projection(self) -> np.ndarray:
+		"""projection -- print the association of observations with map elements
+
+		Returns:
+			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
 
-		labels_v = self.labels
-		x_v = []
-		y_v = []
+		data_matrix = self.coordinate(self.visual, self.xdim)
 
-		for i in range(len(labels_v)):
-
-			ix = self.visual[i]
-			coord = self.coordinate(ix)
-			x_v.append(coord[0])
-			y_v.append(coord[1])
-
-		return pd.DataFrame({'labels': labels_v, 'x': x_v, 'y': y_v})
+		return data_matrix
 
 	def neuron(self, x, y):
 		""" neuron -- returns the contents of a neuron at (x,y) on the map as a vector
@@ -1519,12 +1517,27 @@ class map:
 		"""
 		return self.neurons
 
-	def coordinate(self, rowix):
-		""" coordinate -- convert from a row index to a map xy-coordinate  """
+	@staticmethod
+	@njit(parallel=True)
+	def coordinate(rowix : np.ndarray, xdim : int) -> np.ndarray:
+		"""coordinate -- convert from a list of row index to an array of xy-coordinate
 
-		x = (rowix) % self.xdim
-		y = (rowix) // self.xdim
-		return [x, y]
+		Args:
+			rowix (np.ndarray): 1d array with the 1d indices of the points of interest
+			xdim (int): x dimension of the neuron map
+
+		Returns:
+			np.ndarray: array with x and y coordinates of each point in rowix
+		"""
+
+		len_rowix = len(rowix)
+		coords = np.empty((len_rowix, 2))
+
+		for k in prange(len_rowix):
+			coords[k,0] = rowix[k] % xdim
+			coords[k,1] = rowix[k] // xdim
+
+		return coords
 
 	def rowix(self, x, y):
 		""" rowix -- convert from a map xy-coordinate to a row index  """
