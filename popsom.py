@@ -533,16 +533,16 @@ class map:
 
 				nix = self.visual[i]
 				c = self.coordinate(np.reshape(nix,(1,1)), self.xdim) # NOTE: slow code
-				ix = c[0]
-				iy = c[1]
+				ix = c[0,0]
+				iy = c[0,1]
 
 				count[ix-1, iy-1] = count[ix-1, iy-1]+1
 
 			for i in range(nobs):
 
 				c = self.coordinate(np.reshape(self.visual[i],(1,1)), self.xdim) # NOTE: slow code
-				ix = c[0]
-				iy = c[1]
+				ix = c[0,0]
+				iy = c[0,1]
 
 				# we only print one label per cell
 				if count[ix-1, iy-1] > 0:
@@ -1368,13 +1368,13 @@ class map:
 
 		# sanity check
 		coord = self.coordinate(np.reshape(best_ix,(1,1)), self.xdim)
-		coord_x = coord[0]
-		coord_y = coord[1]
+		coord_x = coord[0,0]
+		coord_y = coord[0,1]
 
 		map_ix = self.visual[data_ix-1]
 		coord = self.coordinate(np.reshape(map_ix,(1,1)), self.xdim)
-		map_x = coord[0]
-		map_y = coord[1]
+		map_x = coord[0,0]
+		map_y = coord[0,1]
 
 		if (coord_x != map_x or coord_y != map_y or best_ix != map_ix):
 			print("Error: best_ix: ", best_ix, " map_ix: ", map_ix, "\n")
@@ -1382,7 +1382,7 @@ class map:
 		# determine if the best and second best are neighbors on the map
 		best_xy = self.coordinate(np.reshape(best_ix,(1,1)), self.xdim)
 		second_best_xy = self.coordinate(np.reshape(second_best_ix,(1,1)), self.xdim)
-		diff_map = best_xy - second_best_xy
+		diff_map = best_xy[0,:] - second_best_xy[0,:]
 		diff_map_sq = diff_map * diff_map
 		sum_map = np.sum(diff_map_sq)
 		dist_map = np.sqrt(sum_map)
@@ -1493,9 +1493,14 @@ class map:
 		Returns:
 			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
-		visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
 
-		data_matrix = self.coordinate(visual_reshaped, self.xdim)
+		ix = np.empty((len(self.visual,1)))
+		for i in range(len(self.visual)):
+			ix[i,0] = self.visual[i]
+
+		# visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
+
+		data_matrix = self.coordinate(ix, self.xdim)
 
 		return data_matrix
 
