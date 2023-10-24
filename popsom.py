@@ -161,7 +161,7 @@ class map:
 			sys.exit("marginal: second argument is not the name of a training \
 						data frame dimension or index")
 
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def vsom_p(self):
 		""" vsom_p -- vectorized, unoptimized version of the stochastic SOM
         		 	  training algorithm written entirely in python
@@ -315,7 +315,7 @@ class map:
 
 		return umat
 
-	@njit(parallel=True)
+	# @njit(parallel=True)
 	def compute_heat(self, d, smoothing=None):
 		""" compute_heat -- compute a heat value map representation of the given distance matrix
 			
