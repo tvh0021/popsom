@@ -532,7 +532,7 @@ class map:
 			for i in range(nobs):
 
 				nix = self.visual[i]
-				c = self.coordinate(np.array(nix), self.xdim) # NOTE: slow code
+				c = self.coordinate(np.reshape(nix,(1,1)), self.xdim) # NOTE: slow code
 				ix = c[0]
 				iy = c[1]
 
@@ -540,7 +540,7 @@ class map:
 
 			for i in range(nobs):
 
-				c = self.coordinate(np.array(self.visual[i]), self.xdim) # NOTE: slow code
+				c = self.coordinate(np.reshape(self.visual[i],(1,1)), self.xdim) # NOTE: slow code
 				ix = c[0]
 				iy = c[1]
 
@@ -1367,12 +1367,12 @@ class map:
 		second_best_ix = o[1]
 
 		# sanity check
-		coord = self.coordinate(np.array(best_ix), self.xdim)
+		coord = self.coordinate(np.reshape(best_ix,(1,1)), self.xdim)
 		coord_x = coord[0]
 		coord_y = coord[1]
 
 		map_ix = self.visual[data_ix-1]
-		coord = self.coordinate(np.array(map_ix), self.xdim)
+		coord = self.coordinate(np.reshape(map_ix,(1,1)), self.xdim)
 		map_x = coord[0]
 		map_y = coord[1]
 
@@ -1380,9 +1380,9 @@ class map:
 			print("Error: best_ix: ", best_ix, " map_ix: ", map_ix, "\n")
 
 		# determine if the best and second best are neighbors on the map
-		best_xy = self.coordinate(np.array(best_ix), self.xdim)
-		second_best_xy = self.coordinate(np.array(second_best_ix), self.xdim)
-		diff_map = np.array(best_xy) - np.array(second_best_xy)
+		best_xy = self.coordinate(np.reshape(best_ix,(1,1)), self.xdim)
+		second_best_xy = self.coordinate(np.reshape(second_best_ix,(1,1)), self.xdim)
+		diff_map = best_xy - second_best_xy
 		diff_map_sq = diff_map * diff_map
 		sum_map = np.sum(diff_map_sq)
 		dist_map = np.sqrt(sum_map)
@@ -1493,8 +1493,9 @@ class map:
 		Returns:
 			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
+		visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
 
-		data_matrix = self.coordinate(self.visual, self.xdim)
+		data_matrix = self.coordinate(visual_reshaped, self.xdim)
 
 		return data_matrix
 
@@ -1523,7 +1524,7 @@ class map:
 		"""coordinate -- convert from a list of row index to an array of xy-coordinate
 
 		Args:
-			rowix (np.ndarray): 1d array with the 1d indices of the points of interest
+			rowix (np.ndarray): 2d array with the 1d indices of the points of interest (n x 1 matrix)
 			xdim (int): x dimension of the neuron map
 
 		Returns:
@@ -1534,8 +1535,7 @@ class map:
 		coords = np.empty((len_rowix, 2))
 
 		for k in prange(len_rowix):
-			coords[k,0] = rowix[k] % xdim
-			coords[k,1] = rowix[k] // xdim
+			coords[k,:] = [rowix[k,0] % xdim, rowix[k,0] // xdim]
 
 		return coords
 
