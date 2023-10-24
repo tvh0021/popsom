@@ -1494,7 +1494,7 @@ class map:
 			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
 
-		ix = np.empty((len(self.visual,1)))
+		ix = np.empty((len(self.visual),1))
 		for i in range(len(self.visual)):
 			ix[i,0] = self.visual[i]
 
