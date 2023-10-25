@@ -1582,7 +1582,7 @@ class map:
 		"""
 
 		len_rowix = len(rowix)
-		coords = np.zeros((len_rowix, 2), dtype=int)
+		coords = np.zeros((len_rowix, 2))
 
 		for k in prange(len_rowix):
 			coords[k,:] = np.array([rowix[k,0] % xdim, rowix[k,0] // xdim])
