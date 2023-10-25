@@ -13,10 +13,11 @@ from scipy import stats                 # KS Test
 from scipy.stats import f               # F-test
 from itertools import combinations
 
-import multiprocessing as mp
-# from joblib import Parallel, delayed
-# from tqdm import tqdm
 from numba import njit, prange
+
+
+np.random.seed(42)
+
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
@@ -35,7 +36,7 @@ class map:
 		self.train = train
 		self.norm = norm
 
-	def fit(self, data, labels, restart=False, neurons=None, parallel=False):
+	def fit(self, data, labels, restart=False, neurons=None):
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
@@ -43,7 +44,6 @@ class map:
 			- labels - a vector or dataframe with one label for each observation in data
 			- restart - a flag that determines whether fit starts with non-randomized values of neurons
 			- neurons - vectors for the weights of the neurons from past realizations
-			- parallel - indicate whether to use multiple threads to find best fit neurons
     	"""
 
 		if self.norm:
@@ -63,25 +63,11 @@ class map:
 			sys.exit("build: map is too small.")
 
 		# generate / train neuron map
-		self.vsom_p()
+		# self.vsom_p()
+		self.fast_som()
 
 		print("Begin matching points with neuron", flush=True)
-		
-
-		if parallel == True:
-			visual = np.zeros(self.data.shape[0])
-
-			num_threads = mp.cpu_count()
-			print(f"{num_threads} threads are available", flush=True)
-			
-			# create a Pool with the number of threads
-			with mp.Pool(num_threads) as pool:
-				result = [pool.map_async(self.single_best_match, range(self.data.shape[0]))]
-			
-			for i in range(self.data.shape[0]):
-				visual[i] = result(str(i))
-		else:
-				visual = self.best_match(self.neurons, self.data_array)
+		visual = self.best_match(self.neurons, self.data_array)
 
 		self.visual = visual
 
@@ -101,19 +87,7 @@ class map:
 		self.neurons = neurons
 		
 		print("Begin matching points with neuron", flush=True)
-
-		if parallel == True:
-			num_threads = mp.cpu_count()
-			print(f"{num_threads} threads are available", flush=True)
-			
-			# create a Pool with the number of threads
-			with mp.Pool(num_threads) as pool:
-				result = [pool.map_async(self.single_best_match, range(self.data_array.shape[0]))]
-			
-			for i in range(self.data_array.shape[0]):
-				visual[i] = result(str(i))
-		else:
-			visual = self.best_match(self.neurons, self.data_array)
+		visual = self.best_match(self.neurons, self.data_array)
 
 		self.visual = visual
 		
@@ -161,10 +135,10 @@ class map:
 			sys.exit("marginal: second argument is not the name of a training \
 						data frame dimension or index")
 
-	# @njit(parallel=True)
 	def vsom_p(self):
 		""" vsom_p -- vectorized, unoptimized version of the stochastic SOM
         		 	  training algorithm written entirely in python
+			***CONTROL***
     	"""
     	# some constants
 		dr = self.data_array.shape[0]
@@ -188,7 +162,7 @@ class map:
 
 	    # compute the initial neighborhood size and step
 		nsize = max(self.xdim, self.ydim) + 1
-		nsize_step = np.ceil(self.train/nsize)
+		nsize_step = np.ceil(self.train/nsize) # can this just be self.train // nsize?
 		step_counter = 0  # counts the number of epochs per nsize_step
 
 	    # convert a 1D rowindex into a 2D map coordinate
@@ -227,11 +201,12 @@ class map:
 		for epoch in range(self.train):
 
 	        # hood size decreases in disrete nsize.steps
-			step_counter = step_counter + 1
+			step_counter += 1 #step_counter + 1
 			if step_counter == nsize_step:
+			# if step_counter % nsize_step == 0:
 
 				step_counter = 0
-				nsize = nsize - 1
+				nsize -= 1
 
 	        # create a sample training vector
 			ix = randint(0, dr-1)
@@ -250,6 +225,84 @@ class map:
 	        # update step
 			gamma_m = np.outer(Gamma(c), np.linspace(1, 1, nc))
 			neurons = neurons - diff * gamma_m
+
+			# self.animation.append(neurons.tolist())
+		
+		self.neurons = neurons
+
+	# neighborhood function
+	@staticmethod
+	@njit()
+	def Gamma(c, m2Ds, alpha, nsize):
+		# 2d distance between neuron c and the rest of the map
+		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
+		
+		# if neuron on the grid is in within nsize neighborhood, then h = alpha, else h = 0.0
+		h = np.where((dist_2d[:,0] < nsize) & (dist_2d[:,1] < nsize), alpha, 0.)
+
+		return h
+
+	def fast_som(self):
+		
+    	# some constants
+		dr = self.data_array.shape[0]
+		dc = self.data_array.shape[1]
+		nr = self.xdim * self.ydim
+		nc = dc  # dim of data and neurons is the same
+
+		if self.restart:
+			neurons = self.restart_neurons
+		else:
+			# build and initialize the matrix holding the neurons
+			# cells = nr * nc  # No. of neurons times number of data dimensions
+
+			# vector with small init values for all neurons
+			# NOTE: each row represents a neuron, each column represents a dimension.
+			neurons = np.random.uniform(-1, 1, (nr,nc))
+			# neurons = np.reshape(v, (nr, nc)) # rearrange the vector as matrix
+
+	    # compute the initial neighborhood size and step
+		nsize = max(self.xdim, self.ydim) + 1 # why plus one?
+		nsize_step = self.train // nsize
+		step_counter = 1  # counts the number of epochs per nsize_step
+
+	    # constants for the Gamma function
+		m = np.reshape(list(range(nr)), (nr,1))  # a vector with all neuron 1D addresses
+
+	    # x-y coordinate of ith neuron: m2Ds[i,] = c(xi, yi)
+		m2Ds = self.coordinate(m, self.xdim)
+
+	    # training #
+	    # the epochs loop
+		
+		# self.animation = [] # what is this even for??
+
+		# Initialize [train] number of random observations for training
+		ix = np.random.randint(0, dr-1, self.train)
+		xk = self.data_array[ix,:]
+
+		for epoch in range(self.train):
+	        # hood size decreases in disrete nsize steps
+			if step_counter % nsize_step == 0:
+				nsize -= 1
+			
+			if epoch % (self // 100):
+				print("epoch = ", epoch, flush=True) 
+
+	        # competitive step
+			xk_m = xk[epoch,:]
+			
+			# calculate the relative distance between features and neurons, take the closest neuron
+			diff = neurons - xk_m
+			squ = diff**2
+			s = np.sum(squ, axis=1)
+			c = np.argmin(s)
+
+	        # update step
+			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
+			neurons -= diff * gamma_m
+
+			step_counter += 1
 
 			# self.animation.append(neurons.tolist())
 		
@@ -315,7 +368,6 @@ class map:
 
 		return umat
 
-	# @njit(parallel=True)
 	def compute_heat(self, d, smoothing=None):
 		""" compute_heat -- compute a heat value map representation of the given distance matrix
 			
@@ -555,7 +607,6 @@ class map:
 
 		plt.show()
 
-	# @njit(parallel=True)
 	def compute_centroids(self, heat, explicit=False):
 		""" compute_centroids -- compute the centroid for each point on the map
 		
@@ -927,7 +978,6 @@ class map:
 
 		return within
 
-	# @njit(parallel=True)
 	def cluster_spread(self, x, y, umat, centroids):
 		""" cluster_spread -- Function to calculate the average distance in
 		                      one cluster given one centroid.
@@ -961,7 +1011,6 @@ class map:
 
 		return average
 
-	# @njit(parallel=True)
 	def distance_between_clusters(self, centroids, unique_centroids, umat):
 		""" distance_between_clusters -- A function to compute the average pairwise
 		                                 distance between clusters.
@@ -1393,10 +1442,6 @@ class map:
 			return 1
 		else:
 			return 0
-
-	# define a function to calculate the best match for a single observation
-	def single_best_match(self, i):
-		return {str(i): self.best_match(self.neurons, self.data_array)}
 	
 	@staticmethod
 	@njit(parallel=True)
@@ -1537,7 +1582,7 @@ class map:
 		"""
 
 		len_rowix = len(rowix)
-		coords = np.zeros((len_rowix, 2))
+		coords = np.zeros((len_rowix, 2), dtype=int)
 
 		for k in prange(len_rowix):
 			coords[k,:] = np.array([rowix[k,0] % xdim, rowix[k,0] // xdim])
