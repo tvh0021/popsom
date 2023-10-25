@@ -286,7 +286,7 @@ class map:
 			if step_counter % nsize_step == 0:
 				nsize -= 1
 			
-			if epoch % (self.train // 100):
+			if epoch % (self.train // 10) == 0:
 				print("epoch = ", epoch, flush=True) 
 
 	        # competitive step
