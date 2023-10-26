@@ -281,13 +281,31 @@ class map:
 		ix = np.random.randint(0, dr-1, self.train)
 		xk = self.data_array[ix,:]
 
+		# Save the stepping of the neurons for termination condition
+		neurons_old = neurons.copy()
+		frequency = 1000
+		self.weight_history = np.zeros((frequency, 2))
+		self.final_epoch = self.train
+		i = 0
+
 		for epoch in range(self.train):
 	        # hood size decreases in disrete nsize steps
-			if step_counter % nsize_step == 0:
-				nsize -= 1
-			
-			if epoch % (self.train // 10) == 0:
-				print("epoch = ", epoch, flush=True) 
+			if (epoch % (self.train // frequency) == 0) & (epoch != 0):
+				network_change = (neurons - neurons_old)**2
+				linearize_change = np.sum(network_change)
+
+				self.weight_history[i,:] = [epoch, linearize_change]
+				i += 1
+
+				# Terminate if the network has not changed much in the last train//100 epochs
+				if linearize_change < 1e-1:
+					print("Terminating at epoch ", epoch, flush=True)
+					self.final_epoch = epoch
+					break
+
+				neurons_old = neurons.copy()
+
+				# print("epoch = ", epoch, flush=True)
 
 	        # competitive step
 			xk_m = xk[epoch,:]
@@ -302,6 +320,19 @@ class map:
 			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
 			neurons -= diff * gamma_m
 
+
+			if step_counter % nsize_step == 0:
+				# network_change = (neurons - neurons_old)**2
+				# linearize_change = np.sum(network_change)
+
+				# self.weight_history.extend([[epoch, linearize_change]])
+				
+				# # Terminate if the network has not changed much in the last nsize_step epochs
+				# if linearize_change < 1e-3:
+				# 	break
+				# neurons_old = neurons.copy()
+				
+				nsize -= 1
 			step_counter += 1
 
 			# self.animation.append(neurons.tolist())
