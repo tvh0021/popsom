@@ -36,7 +36,7 @@ class map:
 		self.train = train
 		self.norm = norm
 
-	def fit(self, data, labels, restart=False, neurons=None):
+	def fit(self, data, labels, restart=False, neurons=None): # MODIFIED
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
@@ -71,7 +71,7 @@ class map:
 
 		self.visual = visual
 
-	def fit_notraining(self, data, labels, neurons, parallel=False):
+	def fit_notraining(self, data, labels, neurons, parallel=False): # NEW
 		"""fit_notraining -- Provided an array of neurons, load best-fit data into the class
 
 		Args:
@@ -233,7 +233,7 @@ class map:
 	# neighborhood function
 	@staticmethod
 	@njit()
-	def Gamma(c, m2Ds, alpha, nsize):
+	def Gamma(c, m2Ds, alpha, nsize): # NEW
 		# 2d distance between neuron c and the rest of the map
 		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
 		
@@ -263,7 +263,7 @@ class map:
 
 	    # compute the initial neighborhood size and step
 		nsize = max(self.xdim, self.ydim) + 1 # why plus one?
-		nsize_step = self.train // nsize
+		nsize_step = self.train // nsize + 1
 		step_counter = 1  # counts the number of epochs per nsize_step
 
 	    # constants for the Gamma function
@@ -284,7 +284,7 @@ class map:
 		# Save the stepping of the neurons for termination condition
 		neurons_old = neurons.copy()
 		frequency = 1000
-		self.weight_history = np.zeros((frequency, 2))
+		self.weight_history = np.zeros((frequency-1, 2))
 		self.final_epoch = self.train
 		i = 0
 
@@ -298,7 +298,7 @@ class map:
 				i += 1
 
 				# Terminate if the network has not changed much in the last train//100 epochs
-				if linearize_change < 1e-1:
+				if linearize_change < 1e-2:
 					print("Terminating at epoch ", epoch, flush=True)
 					self.final_epoch = epoch
 					break
@@ -322,16 +322,6 @@ class map:
 
 
 			if step_counter % nsize_step == 0:
-				# network_change = (neurons - neurons_old)**2
-				# linearize_change = np.sum(network_change)
-
-				# self.weight_history.extend([[epoch, linearize_change]])
-				
-				# # Terminate if the network has not changed much in the last nsize_step epochs
-				# if linearize_change < 1e-3:
-				# 	break
-				# neurons_old = neurons.copy()
-				
 				nsize -= 1
 			step_counter += 1
 
@@ -1563,16 +1553,12 @@ class map:
 		else:
 			return prob_v
 
-	def projection(self) -> np.ndarray:
+	def projection(self) -> np.ndarray: # MODIFIED
 		"""projection -- print the association of observations with map elements
 
 		Returns:
 			np.ndarray: for each observations, return the x and y value on the neuron map
 		"""
-
-		# ix = np.empty((len(self.visual),1))
-		# for i in range(len(self.visual)):
-		# 	ix[i,0] = self.visual[i]
 
 		visual_reshaped = np.reshape(self.visual,(len(self.visual),1))
 
@@ -1594,14 +1580,14 @@ class map:
 		ix = self.rowix(x, y)
 		return self.neurons[ix]
 	
-	def all_neurons(self):
+	def all_neurons(self): # NEW
 		""" all_neurons -- returns the entire neuron maps to load into next step
 		"""
 		return self.neurons
 
 	@staticmethod
 	@njit(parallel=True)
-	def coordinate(rowix : np.ndarray, xdim : int) -> np.ndarray:
+	def coordinate(rowix : np.ndarray, xdim : int) -> np.ndarray: # MODIFIED
 		"""coordinate -- convert from a list of row index to an array of xy-coordinate
 
 		Args:
