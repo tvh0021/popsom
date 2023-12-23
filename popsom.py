@@ -237,7 +237,7 @@ class map:
 		""" Gamma -- neighborhood function"""
 		# 2d distance between neuron c and the rest of the map
 		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
-		rectangular_dist = np.zeros(dist_2d.shape[0], dtype=int)
+		rectangular_dist = np.zeros(dist_2d.shape[0])
 		for i in prange(dist_2d.shape[0]): # numba max does not have axis argument
 			rectangular_dist[i] = np.max(dist_2d[i,:])
   
