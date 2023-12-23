@@ -234,13 +234,21 @@ class map:
 	@staticmethod
 	@njit()
 	def Gamma(c, m2Ds, alpha, nsize): # NEW
+		""" Gamma -- neighborhood function"""
 		# 2d distance between neuron c and the rest of the map
 		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
+  
+		#Define the Gaussian function
+		def gauss(dist_2d, A, sigma):
+			""" gauss -- Gaussian function"""
+			# sigma = 1.
+			return A * np.exp(-(dist_2d) ** 2 / (2 * sigma ** 2))
 		
 		# if neuron on the grid is in within nsize neighborhood, then h = alpha, else h = 0.0
-		h = np.where((dist_2d[:,0] < nsize) & (dist_2d[:,1] < nsize), alpha, 0.)
+		h = np.where((dist_2d[:,0] < nsize) & (dist_2d[:,1] < nsize), gauss(dist_2d, alpha, nsize/10), 0.)
 
 		return h
+	
 
 	def fast_som(self):
 		
