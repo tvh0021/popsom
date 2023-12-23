@@ -237,15 +237,18 @@ class map:
 		""" Gamma -- neighborhood function"""
 		# 2d distance between neuron c and the rest of the map
 		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
+		rectangular_dist = np.max(dist_2d, axis=1) # 
   
-		#Define the Gaussian function
-		def gauss(dist_2d, A, sigma):
+		#Define the Gaussian function to calculate the neighborhood function
+		def gauss(dist, A, sigma):
 			""" gauss -- Gaussian function"""
 			# sigma = 1.
-			return A * np.exp(-(dist_2d) ** 2 / (2 * sigma ** 2))
+			return A * np.exp(-(dist) ** 2 / (2 * sigma ** 2))
 		
-		# if neuron on the grid is in within nsize neighborhood, then h = alpha, else h = 0.0
-		h = np.where((dist_2d[:,0] < nsize) & (dist_2d[:,1] < nsize), gauss(dist_2d, alpha, nsize/10), 0.)
+		# if neuron on the grid is in within nsize neighborhood, then h = Gaussian(alpha), else h = 0.0
+		h = gauss(rectangular_dist, alpha, nsize/4)
+		h[rectangular_dist > nsize] = 0.
+		# h = np.where(rectangular_dist < nsize, alpha, 0.)
 
 		return h
 	
