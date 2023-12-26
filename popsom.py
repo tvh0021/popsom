@@ -281,7 +281,7 @@ class map:
 	    # compute the initial neighborhood size and step
 		nsize_max = max(self.xdim, self.ydim) + 1
 		nsize_step = self.train // nsize_max + 1 # why plus one?
-		nsize = nsize_max - epoch // nsize_step
+		nsize = nsize_max - self.epoch // nsize_step
 		epoch = self.epoch  # counts the number of epochs per nsize_step
 
 	    # constants for the Gamma function
