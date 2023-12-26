@@ -318,6 +318,7 @@ class map:
 				if linearize_change < 1e-2:
 					print("Terminating from small changes at epoch ", epoch, flush=True)
 					self.final_epoch = epoch
+					self.step_counter = epoch
 					break
 
 				neurons_old = neurons.copy()
@@ -326,6 +327,7 @@ class map:
 				if (epoch - self.step_counter) > (self.train // self.number_of_batches):
 					print("Terminating from step limit reached at epoch ", epoch, flush=True)
 					self.final_epoch = epoch
+					self.step_counter = epoch
 					break
 
 	        # competitive step
@@ -349,7 +351,7 @@ class map:
 			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
-		self.step_counter = step_counter
+		# self.step_counter = step_counter
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
 		""" convergence -- the convergence index of a map
