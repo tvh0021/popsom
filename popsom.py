@@ -303,7 +303,6 @@ class map:
 		neurons_old = neurons.copy()
 		frequency = 1000
 		self.weight_history = np.zeros((frequency-1, 2))
-		self.final_epoch = self.train
 		i = 0
 
 		# for epoch in range(self.step_counter, self.train):
@@ -320,14 +319,12 @@ class map:
 				# 	# Terminate if the network has not changed much in the last train//100 epochs
 				# 	if linearize_change < 1e-2:
 				# 		print("Terminating from small changes at epoch ", epoch, flush=True)
-				# 		self.final_epoch = epoch
 				# 		self.epoch = epoch
 				# 		break
 
 			# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
-			if (epoch - self.epoch) > (self.train // self.number_of_batches):
+			if (epoch - self.epoch) >= (self.train // self.number_of_batches):
 				print("Terminating from step limit reached at epoch ", epoch, flush=True)
-				self.final_epoch = epoch
 				self.epoch = epoch
 				break
 
