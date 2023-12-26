@@ -21,7 +21,7 @@ np.random.seed(42)
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
-	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, step_counter=1, number_of_batches=1, norm=False):
+	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, epoch=1, number_of_batches=1, norm=False):
 		""" __init__ -- Initialize the Model 
 
 			parameters:
@@ -36,7 +36,7 @@ class map:
 		self.ydim = ydim
 		self.alpha = alpha
 		self.train = train
-		self.step_counter = step_counter
+		self.epoch = epoch
 		self.number_of_batches = number_of_batches
 		self.norm = norm
 
@@ -281,7 +281,7 @@ class map:
 	    # compute the initial neighborhood size and step
 		nsize = max(self.xdim, self.ydim) + 1 # why plus one?
 		nsize_step = self.train // nsize + 1
-		step_counter = self.step_counter  # counts the number of epochs per nsize_step
+		epoch = self.epoch  # counts the number of epochs per nsize_step
 
 	    # constants for the Gamma function
 		m = np.reshape(list(range(nr)), (nr,1))  # a vector with all neuron 1D addresses
@@ -305,29 +305,29 @@ class map:
 		self.final_epoch = self.train
 		i = 0
 
-		for epoch in range(self.step_counter, self.train):
+		# for epoch in range(self.step_counter, self.train):
+		while True:
 	        # hood size decreases in disrete nsize steps
-			# if (epoch % (self.train // frequency) == 0) & (epoch != 0):
-			# 	network_change = (neurons - neurons_old)**2
-			# 	linearize_change = np.sum(network_change)
+			if (epoch % (self.train // frequency) == 0) & (epoch != 0):
+				network_change = (neurons - neurons_old)**2
+				linearize_change = np.sum(network_change)
 
-			# 	self.weight_history[i,:] = [epoch, linearize_change]
-			# 	i += 1
-
-			# 	# Terminate if the network has not changed much in the last train//100 epochs
-			# 	if linearize_change < 1e-2:
-			# 		print("Terminating from small changes at epoch ", epoch, flush=True)
-			# 		self.final_epoch = epoch
-			# 		self.step_counter = epoch
-			# 		break
-
-			# 	neurons_old = neurons.copy()
+				self.weight_history[i,:] = [epoch, linearize_change]
+				i += 1
+				neurons_old = neurons.copy()
+    
+				# 	# Terminate if the network has not changed much in the last train//100 epochs
+				# 	if linearize_change < 1e-2:
+				# 		print("Terminating from small changes at epoch ", epoch, flush=True)
+				# 		self.final_epoch = epoch
+				# 		self.epoch = epoch
+				# 		break
 
 			# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
-			if (epoch - self.step_counter) > (self.train // self.number_of_batches):
+			if (epoch - self.epoch) > (self.train // self.number_of_batches):
 				print("Terminating from step limit reached at epoch ", epoch, flush=True)
 				self.final_epoch = epoch
-				self.step_counter = epoch
+				self.epoch = epoch
 				break
 
 	        # competitive step
@@ -344,22 +344,15 @@ class map:
 			neurons -= diff * gamma_m
 
 			# shrink the neighborhood size every nsize_step epochs
-			if step_counter % nsize_step == 0:
-				network_change = (neurons - neurons_old)**2
-				linearize_change = np.sum(network_change)
-
-				self.weight_history[i,:] = [epoch, linearize_change]
-				
-				i += 1
+			if epoch % nsize_step == 0:
 				nsize -= 1
-				neurons_old = neurons.copy()
+				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
     
-			step_counter += 1
+			epoch += 1
 
 			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
-		# self.step_counter = step_counter
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
 		""" convergence -- the convergence index of a map
