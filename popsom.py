@@ -343,9 +343,17 @@ class map:
 			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
 			neurons -= diff * gamma_m
 
-
+			# shrink the neighborhood size every nsize_step epochs
 			if step_counter % nsize_step == 0:
+				network_change = (neurons - neurons_old)**2
+				linearize_change = np.sum(network_change)
+
+				self.weight_history[i,:] = [epoch, linearize_change]
+				
+				i += 1
 				nsize -= 1
+				neurons_old = neurons.copy()
+    
 			step_counter += 1
 
 			# self.animation.append(neurons.tolist())
