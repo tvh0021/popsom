@@ -21,19 +21,21 @@ np.random.seed(42)
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
-	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, norm=False):
+	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, step_counter=1, norm=False):
 		""" __init__ -- Initialize the Model 
 
 			parameters:
 			- xdim,ydim - the dimensions of the map
 			- alpha - the learning rate, should be a positive non-zero real number
 			- train - number of training iterations
+			- step_counter - current step in the training process
 			- norm - normalize the input data space
     	"""
 		self.xdim = xdim
 		self.ydim = ydim
 		self.alpha = alpha
 		self.train = train
+		self.step_counter = step_counter
 		self.norm = norm
 
 	def fit(self, data, labels, restart=False, neurons=None): # MODIFIED
@@ -277,7 +279,7 @@ class map:
 	    # compute the initial neighborhood size and step
 		nsize = max(self.xdim, self.ydim) + 1 # why plus one?
 		nsize_step = self.train // nsize + 1
-		step_counter = 1  # counts the number of epochs per nsize_step
+		step_counter = self.step_counter  # counts the number of epochs per nsize_step
 
 	    # constants for the Gamma function
 		m = np.reshape(list(range(nr)), (nr,1))  # a vector with all neuron 1D addresses
@@ -341,6 +343,7 @@ class map:
 			# self.animation.append(neurons.tolist())
 		
 		self.neurons = neurons
+		self.step_counter = step_counter
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
 		""" convergence -- the convergence index of a map
