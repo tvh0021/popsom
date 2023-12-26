@@ -279,8 +279,9 @@ class map:
 			# neurons = np.reshape(v, (nr, nc)) # rearrange the vector as matrix
 
 	    # compute the initial neighborhood size and step
-		nsize = max(self.xdim, self.ydim) + 1 # why plus one?
-		nsize_step = self.train // nsize + 1
+		nsize_max = max(self.xdim, self.ydim) + 1
+		nsize_step = self.train // nsize_max + 1 # why plus one?
+		nsize = nsize_max - epoch // nsize_step
 		epoch = self.epoch  # counts the number of epochs per nsize_step
 
 	    # constants for the Gamma function
@@ -345,7 +346,7 @@ class map:
 
 			# shrink the neighborhood size every nsize_step epochs
 			if epoch % nsize_step == 0:
-				nsize -= 1
+				nsize = nsize_max - epoch // nsize_step
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
     
 			epoch += 1
