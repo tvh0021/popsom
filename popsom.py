@@ -21,7 +21,7 @@ np.random.seed(42)
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
-	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, step_counter=1, norm=False):
+	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, step_counter=1, number_of_batches=1, norm=False):
 		""" __init__ -- Initialize the Model 
 
 			parameters:
@@ -29,6 +29,7 @@ class map:
 			- alpha - the learning rate, should be a positive non-zero real number
 			- train - number of training iterations
 			- step_counter - current step in the training process
+			- number_of_batches - number of batches to train on
 			- norm - normalize the input data space
     	"""
 		self.xdim = xdim
@@ -36,6 +37,7 @@ class map:
 		self.alpha = alpha
 		self.train = train
 		self.step_counter = step_counter
+		self.number_of_batches = number_of_batches
 		self.norm = norm
 
 	def fit(self, data, labels, restart=False, neurons=None): # MODIFIED
@@ -303,7 +305,7 @@ class map:
 		self.final_epoch = self.train
 		i = 0
 
-		for epoch in range(self.train):
+		for epoch in range(self.step_counter, self.train):
 	        # hood size decreases in disrete nsize steps
 			if (epoch % (self.train // frequency) == 0) & (epoch != 0):
 				network_change = (neurons - neurons_old)**2
@@ -314,13 +316,17 @@ class map:
 
 				# Terminate if the network has not changed much in the last train//100 epochs
 				if linearize_change < 1e-2:
-					print("Terminating at epoch ", epoch, flush=True)
+					print("Terminating from small changes at epoch ", epoch, flush=True)
 					self.final_epoch = epoch
 					break
 
 				neurons_old = neurons.copy()
 
-				# print("epoch = ", epoch, flush=True)
+				# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
+				if (epoch - self.step_counter) > (self.train // self.number_of_batches):
+					print("Terminating from step limit reached at epoch ", epoch, flush=True)
+					self.final_epoch = epoch
+					break
 
 	        # competitive step
 			xk_m = xk[epoch,:]
