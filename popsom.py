@@ -307,28 +307,28 @@ class map:
 
 		for epoch in range(self.step_counter, self.train):
 	        # hood size decreases in disrete nsize steps
-			if (epoch % (self.train // frequency) == 0) & (epoch != 0):
-				network_change = (neurons - neurons_old)**2
-				linearize_change = np.sum(network_change)
+			# if (epoch % (self.train // frequency) == 0) & (epoch != 0):
+			# 	network_change = (neurons - neurons_old)**2
+			# 	linearize_change = np.sum(network_change)
 
-				self.weight_history[i,:] = [epoch, linearize_change]
-				i += 1
+			# 	self.weight_history[i,:] = [epoch, linearize_change]
+			# 	i += 1
 
-				# Terminate if the network has not changed much in the last train//100 epochs
-				if linearize_change < 1e-2:
-					print("Terminating from small changes at epoch ", epoch, flush=True)
-					self.final_epoch = epoch
-					self.step_counter = epoch
-					break
+			# 	# Terminate if the network has not changed much in the last train//100 epochs
+			# 	if linearize_change < 1e-2:
+			# 		print("Terminating from small changes at epoch ", epoch, flush=True)
+			# 		self.final_epoch = epoch
+			# 		self.step_counter = epoch
+			# 		break
 
-				neurons_old = neurons.copy()
+			# 	neurons_old = neurons.copy()
 
-				# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
-				if (epoch - self.step_counter) > (self.train // self.number_of_batches):
-					print("Terminating from step limit reached at epoch ", epoch, flush=True)
-					self.final_epoch = epoch
-					self.step_counter = epoch
-					break
+			# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
+			if (epoch - self.step_counter) > (self.train // self.number_of_batches):
+				print("Terminating from step limit reached at epoch ", epoch, flush=True)
+				self.final_epoch = epoch
+				self.step_counter = epoch
+				break
 
 	        # competitive step
 			xk_m = xk[epoch,:]
