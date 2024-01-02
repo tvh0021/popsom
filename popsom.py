@@ -302,7 +302,7 @@ class map:
 		# Save the stepping of the neurons for termination condition
 		neurons_old = neurons.copy()
 		frequency = 1000
-		self.weight_history = np.zeros((self.train//frequency, 2))
+		self.weight_history = np.zeros((self.train//frequency+1, 2))
 		i = 0
 
 		# for epoch in range(self.step_counter, self.train):
