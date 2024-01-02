@@ -1079,6 +1079,8 @@ class map:
 		columns = tmp_1.shape[1]
 
 		tmp = np.transpose(np.array(list(combinations([i for i in range(columns)], 2))))
+		print("shape of tmp: ", tmp.shape)
+		print("shape of tmp_1: ", tmp_1.shape)
 
 		tmp_3 = np.zeros(shape=(tmp_1.shape[0], tmp.shape[1]))
 
