@@ -308,7 +308,7 @@ class map:
 		# for epoch in range(self.step_counter, self.train):
 		while True:
 	        # hood size decreases in disrete nsize steps
-			if (epoch % (self.train // frequency) == 0) & (epoch != 0):
+			if (epoch % frequency == 0) & (epoch != 0):
 				print(f"Epoch {epoch} is divisible by {self.train//frequency}", flush=True)
 				network_change = (neurons - neurons_old)**2
 				linearize_change = np.sum(network_change)
