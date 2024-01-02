@@ -21,7 +21,7 @@ np.random.seed(42)
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
-	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, epoch=1, number_of_batches=1, norm=False):
+	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, epoch=0, number_of_batches=1, norm=False):
 		""" __init__ -- Initialize the Model 
 
 			parameters:
