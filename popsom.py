@@ -283,7 +283,7 @@ class map:
 		nsize_step = self.train // nsize_max + 1 # why plus one?
 		nsize = nsize_max - self.epoch // nsize_step
 		epoch = self.epoch  # counts the number of epochs per nsize_step
-		print("starting epoch for this batch is ", epoch, flush=True)
+		# print("starting epoch for this batch is ", epoch, flush=True)
 
 	    # constants for the Gamma function
 		m = np.reshape(list(range(nr)), (nr,1))  # a vector with all neuron 1D addresses
@@ -310,10 +310,11 @@ class map:
 		while True:
 	        # hood size decreases in disrete nsize steps
 			if (epoch % frequency == 0) & (epoch != 0):
-				print(f"Epoch {epoch} is divisible by {frequency}", flush=True)
+				# print(f"Epoch {epoch} is divisible by {frequency}", flush=True)
 				network_change = (neurons - neurons_old)**2
 				linearize_change = np.sum(network_change)
 
+				# i = epoch // frequency - 1
 				self.weight_history[i,:] = [epoch, linearize_change]
 				i += 1
 				neurons_old = neurons.copy()
