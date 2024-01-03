@@ -252,7 +252,7 @@ class map:
 			return A * np.exp(-(dist) ** 2 / (2 * sigma ** 2))
 		
 		# if neuron on the grid is in within nsize neighborhood, then h = Gaussian(alpha), else h = 0.0
-		h = gauss(rectangular_dist, alpha, nsize/4)
+		h = gauss(rectangular_dist, alpha, nsize/3)
 		h[rectangular_dist > nsize] = 0.
 		# h = np.where(rectangular_dist < nsize, alpha, 0.)
 
@@ -280,9 +280,16 @@ class map:
 
 	    # compute the initial neighborhood size and step
 		nsize_max = max(self.xdim, self.ydim) + 1
-		nsize_step = self.train // nsize_max + 1 # why plus one?
-		nsize = nsize_max - self.epoch // nsize_step
-		epoch = self.epoch  # counts the number of epochs per nsize_step
+		nsize_min = 8
+		nsize_step = self.train // 20 # for the first 5% of the training steps, shrink the neighborhood
+
+		if self.epoch > nsize_step:
+			nsize = nsize_min
+		else:
+			nsize_freq = nsize_step // (nsize_max - nsize_min) # how often to shrink the neighborhood
+			nsize = nsize_max - self.epoch // nsize_freq
+   
+		epoch = self.epoch  # counts the number of epochs per nsize_freq
 		# print("starting epoch for this batch is ", epoch, flush=True)
 
 	    # constants for the Gamma function
@@ -319,11 +326,11 @@ class map:
 				i += 1
 				neurons_old = neurons.copy()
     
-				# 	# Terminate if the network has not changed much in the last train//100 epochs
-				# 	if linearize_change < 1e-2:
-				# 		print("Terminating from small changes at epoch ", epoch, flush=True)
-				# 		self.epoch = epoch
-				# 		break
+				# Terminate if the network has not changed much in the last train//100 epochs
+				if linearize_change < 1e-1:
+					print("Terminating from small changes at epoch ", epoch, flush=True)
+					self.epoch = epoch
+					break
 
 			# if this batch has gone over the step limit for the batch (which is total training steps divided by number of batches), terminate
 			if (epoch - self.epoch) >= (self.train // self.number_of_batches):
@@ -344,9 +351,9 @@ class map:
 			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
 			neurons -= diff * gamma_m
 
-			# shrink the neighborhood size every nsize_step epochs
-			if epoch % nsize_step == 0:
-				nsize = nsize_max - epoch // nsize_step
+			# shrink the neighborhood size every frequ epochs
+			if epoch % nsize_freq == 0 and nsize > 8:
+				nsize = nsize_max - epoch // nsize_freq
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
     
 			epoch += 1
