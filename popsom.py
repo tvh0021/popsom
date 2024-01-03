@@ -356,6 +356,11 @@ class map:
 				nsize = nsize_max - epoch // nsize_freq
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
     
+			# save neuron maps sparingly
+			if epoch % 1000000 == 0:
+				print("Saving neurons at epoch ", epoch, flush=True)
+				np.save(f"neurons_{epoch}.npy", neurons)	
+    
 			epoch += 1
 
 			# self.animation.append(neurons.tolist())
