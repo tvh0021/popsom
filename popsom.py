@@ -362,7 +362,7 @@ class map:
 			# save neuron maps sparingly
 			if epoch % 1000000 == 0 and epoch != 0:
 				print("Saving neurons at epoch ", epoch, flush=True)
-				np.save(f"neurons_{epoch}_{self.xdim}{self.ydim}_{self.alpha}_{self.train}.npy", neurons)	
+				np.save(f"neurons_{epoch}_{self.xdim}{self.ydim}_{self.alpha}_{self.train}_{self.decay_rate}.npy", neurons)	
     
 			epoch += 1
 
