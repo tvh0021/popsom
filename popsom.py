@@ -281,7 +281,7 @@ class map:
 	    # compute the initial neighborhood size and step
 		nsize_max = max(self.xdim, self.ydim) + 1
 		nsize_min = 8
-		nsize_step = self.train // 20 # for the first 5% of the training steps, shrink the neighborhood
+		nsize_step = self.train // 5 # for the first 20% of the training steps, shrink the neighborhood
 
 		if self.epoch > nsize_step:
 			nsize = nsize_min
@@ -357,7 +357,7 @@ class map:
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
     
 			# save neuron maps sparingly
-			if epoch % 1000000 == 0:
+			if epoch % 1000000 == 0 and epoch != 0:
 				print("Saving neurons at epoch ", epoch, flush=True)
 				np.save(f"neurons_{epoch}.npy", neurons)	
     
