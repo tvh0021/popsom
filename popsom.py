@@ -298,11 +298,6 @@ class map:
 	    # x-y coordinate of ith neuron: m2Ds[i,] = c(xi, yi)
 		m2Ds = self.coordinate(m, self.xdim)
 
-	    # training #
-	    # the epochs loop
-		
-		# self.animation = [] # what is this even for??
-
 		# Initialize [train] number of random observations for training
 		ix = np.random.randint(0, dr-1, self.train)
 		xk = self.data_array[ix,:]
@@ -312,6 +307,10 @@ class map:
 		frequency = 1000
 		self.weight_history = np.zeros((self.train//frequency, 2))
 		i = 0
+  
+		# implement momentum-based gradient descent
+		momentum_decay_rate = 0.8
+		diff = 0.
 
 		# for epoch in range(self.step_counter, self.train):
 		while True:
@@ -342,6 +341,7 @@ class map:
 			xk_m = xk[epoch,:]
 			
 			# calculate the relative distance between features and neurons, take the closest neuron
+			momentum = diff * momentum_decay_rate # momentum-based gradient descent
 			diff = neurons - xk_m
 			squ = diff**2
 			s = np.sum(squ, axis=1)
@@ -349,7 +349,7 @@ class map:
 
 	        # update step
 			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
-			neurons -= diff * gamma_m
+			neurons -= (diff + momentum) * gamma_m
 
 			# shrink the neighborhood size every frequ epochs
 			if epoch % nsize_freq == 0 and nsize > 8:
