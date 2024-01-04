@@ -40,7 +40,7 @@ class map:
 		self.number_of_batches = number_of_batches
 		self.norm = norm
 
-	def fit(self, data, labels, restart=False, neurons=None): # MODIFIED
+	def fit(self, data, labels, restart=False, neurons=None, decay_rate=0.5): # MODIFIED
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
@@ -48,6 +48,7 @@ class map:
 			- labels - a vector or dataframe with one label for each observation in data
 			- restart - a flag that determines whether fit starts with non-randomized values of neurons
 			- neurons - vectors for the weights of the neurons from past realizations
+			- decay_rate - the rate at which the momentum-based gradient descent decay
     	"""
 
 		if self.norm:
@@ -61,6 +62,7 @@ class map:
 		self.data = data
 		self.data_array = data.to_numpy()	
 		self.labels = labels
+		self.decay_rate = decay_rate
 
 		# check if the dims are reasonable
 		if (self.xdim < 3 or self.ydim < 3):
@@ -236,13 +238,13 @@ class map:
 
 	# neighborhood function
 	@staticmethod
-	@njit()
+	@njit(parallel=True)
 	def Gamma(c, m2Ds, alpha, nsize): # NEW
 		""" Gamma -- neighborhood function"""
 		# 2d distance between neuron c and the rest of the map
 		dist_2d = np.abs(m2Ds[c,:] - m2Ds)
 		rectangular_dist = np.zeros(dist_2d.shape[0])
-		for i in prange(dist_2d.shape[0]): # numba max does not have axis argument
+		for i in prange(dist_2d.shape[0]): # numba max does not have axis argument, otherwise this would be rectangular_dist = np.max(dist_2d, axis=1)
 			rectangular_dist[i] = np.max(dist_2d[i,:])
   
 		#Define the Gaussian function to calculate the neighborhood function
@@ -252,7 +254,8 @@ class map:
 			return A * np.exp(-(dist) ** 2 / (2 * sigma ** 2))
 		
 		# if neuron on the grid is in within nsize neighborhood, then h = Gaussian(alpha), else h = 0.0
-		h = gauss(rectangular_dist, alpha, nsize/3)
+		h = gauss(rectangular_dist, alpha, nsize/3) # uncomment if using Gaussian neighborhood function
+		# h = np.where(rectangular_dist <= nsize, h, 0.) # uncomment if using constant neighborhood function
 		h[rectangular_dist > nsize] = 0.
 		# h = np.where(rectangular_dist < nsize, alpha, 0.)
 
@@ -309,7 +312,7 @@ class map:
 		i = 0
   
 		# implement momentum-based gradient descent
-		momentum_decay_rate = 0.4
+		momentum_decay_rate = self.decay_rate
 		diff = 0.
 
 		# for epoch in range(self.step_counter, self.train):
