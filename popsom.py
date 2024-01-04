@@ -309,7 +309,7 @@ class map:
 		i = 0
   
 		# implement momentum-based gradient descent
-		momentum_decay_rate = 0.8
+		momentum_decay_rate = 0.4
 		diff = 0.
 
 		# for epoch in range(self.step_counter, self.train):
