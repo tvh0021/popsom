@@ -309,10 +309,11 @@ class map:
 		neurons_old = neurons.copy()
 		frequency = 1000
 		self.weight_history = np.zeros((self.train//frequency, 2))
+		self.feature_weight_history = np.zeros((self.train//frequency, dc))
 		i = 0
   
 		# implement momentum-based gradient descent
-		momentum_decay_rate = self.decay_rate
+		# momentum_decay_rate = self.decay_rate
 		diff = 0.
 
 		# for epoch in range(self.step_counter, self.train):
@@ -322,9 +323,11 @@ class map:
 				# print(f"Epoch {epoch} is divisible by {frequency}", flush=True)
 				network_change = (neurons - neurons_old)**2
 				linearize_change = np.sum(network_change)
+				per_feature_change = np.apply_over_axes(np.sum, network_change, axes=[0,1])
 
 				# i = epoch // frequency - 1
 				self.weight_history[i,:] = [epoch, linearize_change]
+				self.feature_weight_history[i,:] = per_feature_change
 				i += 1
 				neurons_old = neurons.copy()
     
@@ -344,7 +347,7 @@ class map:
 			xk_m = xk[epoch,:]
 			
 			# calculate the relative distance between features and neurons, take the closest neuron
-			momentum = diff * momentum_decay_rate # momentum-based gradient descent
+			# momentum = diff * momentum_decay_rate # momentum-based gradient descent
 			diff = neurons - xk_m
 			squ = diff**2
 			s = np.sum(squ, axis=1)
@@ -352,7 +355,8 @@ class map:
 
 	        # update step
 			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
-			neurons -= (diff + momentum) * gamma_m
+			# neurons -= (diff + momentum) * gamma_m
+			neurons -= diff * gamma_m
 
 			# shrink the neighborhood size every frequ epochs
 			if epoch % nsize_freq == 0 and nsize > 8:
