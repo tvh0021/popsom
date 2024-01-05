@@ -238,7 +238,7 @@ class map:
 
 	# neighborhood function
 	@staticmethod
-	@njit(parallel=True)
+	@njit()
 	def Gamma(c, m2Ds, alpha, nsize): # NEW
 		""" Gamma -- neighborhood function"""
 		# 2d distance between neuron c and the rest of the map
