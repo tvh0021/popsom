@@ -21,7 +21,7 @@ np.random.seed(42)
 
 # NOTE: numba does not work in a class with pandas DataFrames. Can circumvent with @staticmethod
 class map:
-	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, epoch=0, number_of_batches=1, norm=False):
+	def __init__(self, xdim=10, ydim=5, alpha=.3, train=1000, epoch=0, number_of_batches=1, alpha_type="static", norm=False):
 		""" __init__ -- Initialize the Model 
 
 			parameters:
@@ -30,6 +30,7 @@ class map:
 			- train - number of training iterations
 			- step_counter - current step in the training process
 			- number_of_batches - number of batches to train on
+			- alpha_type - a string that determines whether the learning rate is static or decaying
 			- norm - normalize the input data space
     	"""
 		self.xdim = xdim
@@ -39,8 +40,14 @@ class map:
 		self.epoch = epoch
 		self.number_of_batches = number_of_batches
 		self.norm = norm
+		if alpha_type == "static":
+			self.alpha_type = 0
+		elif alpha_type == "decay":
+			self.alpha_type = 1
+		else:
+			sys.exit("alpha_type must be either 'static' or 'decay'")
 
-	def fit(self, data, labels, restart=False, neurons=None, decay_rate=0.5): # MODIFIED
+	def fit(self, data, labels, restart=False, neurons=None, momentum_decay_rate=0.5): # MODIFIED
 		""" fit -- Train the Model with Python or Fortran
 
 			parameters:
@@ -48,7 +55,7 @@ class map:
 			- labels - a vector or dataframe with one label for each observation in data
 			- restart - a flag that determines whether fit starts with non-randomized values of neurons
 			- neurons - vectors for the weights of the neurons from past realizations
-			- decay_rate - the rate at which the momentum-based gradient descent decay
+			- momentum_decay_rate - the rate at which the momentum-based gradient descent decay
     	"""
 
 		if self.norm:
@@ -62,14 +69,13 @@ class map:
 		self.data = data
 		self.data_array = data.to_numpy()	
 		self.labels = labels
-		self.decay_rate = decay_rate
+		self.momentum_decay_rate = momentum_decay_rate
 
 		# check if the dims are reasonable
 		if (self.xdim < 3 or self.ydim < 3):
 			sys.exit("build: map is too small.")
 
 		# generate / train neuron map
-		# self.vsom_p()
 		self.fast_som()
 
 		print("Begin matching points with neuron", flush=True)
@@ -140,102 +146,7 @@ class map:
 		else:
 			sys.exit("marginal: second argument is not the name of a training \
 						data frame dimension or index")
-
-	def vsom_p(self):
-		""" vsom_p -- vectorized, unoptimized version of the stochastic SOM
-        		 	  training algorithm written entirely in python
-			***CONTROL***
-    	"""
-    	# some constants
-		dr = self.data_array.shape[0]
-		dc = self.data_array.shape[1]
-		nr = self.xdim*self.ydim
-		nc = dc  # dim of data and neurons is the same
-
-		if self.restart:
-			neurons = self.restart_neurons
-		else:
-			# build and initialize the matrix holding the neurons
-			cells = nr * nc  # No. of neurons times number of data dimensions
-
-			# vector with small init values for all neurons
-			v = np.random.uniform(-1, 1, cells)
-
-			# NOTE: each row represents a neuron, each column represents a dimension.
-			neurons = np.transpose(np.reshape(v, (nc, nr)))  # rearrange the vector as matrix
-
-		# neurons = np.reshape(v, (nr, nc)) # Another option to reshape
-
-	    # compute the initial neighborhood size and step
-		nsize = max(self.xdim, self.ydim) + 1
-		nsize_step = np.ceil(self.train/nsize) # can this just be self.train // nsize?
-		step_counter = 0  # counts the number of epochs per nsize_step
-
-	    # convert a 1D rowindex into a 2D map coordinate
-		def coord2D(rowix):
-
-			x = np.array(rowix) % self.xdim
-			y = np.array(rowix) // self.xdim
-
-			return np.concatenate((x, y))
-
-	    # constants for the Gamma function
-		m = [i for i in range(nr)]  # a vector with all neuron 1D addresses
-
-	    # x-y coordinate of ith neuron: m2Ds[i,] = c(xi, yi)
-		m2Ds = np.transpose(coord2D(m).reshape(2, nr))
-
-	    # neighborhood function
-		def Gamma(c):
-
-	        # lookup the 2D map coordinate for c
-			c2D = m2Ds[c, ]
-	        # a matrix with each row equal to c2D
-			c2Ds = np.outer(np.linspace(1, 1, nr), c2D)
-	        # distance vector of each neuron from c in terms of map coords!
-			d = np.sqrt(np.dot((c2Ds - m2Ds)**2, [1, 1]))
-	        # if m on the grid is in neigh then alpha else 0.0
-			hood = np.where(d < nsize*1.5, self.alpha, 0.0)
-
-			return hood
-		
-	    # training #
-	    # the epochs loop
-		
-		# self.animation = [] # what is this even for??
-
-		for epoch in range(self.train):
-
-	        # hood size decreases in disrete nsize.steps
-			step_counter += 1 #step_counter + 1
-			if step_counter == nsize_step:
-			# if step_counter % nsize_step == 0:
-
-				step_counter = 0
-				nsize -= 1
-
-	        # create a sample training vector
-			ix = randint(0, dr-1)
-			# ix = (epoch+1) % dr   # For Debugging
-			xk = self.data_array[ix,:]
-
-	        # competitive step
-			xk_m = np.outer(np.linspace(1, 1, nr), xk)
-			
-			diff = neurons - xk_m
-			squ = diff * diff
-			s = np.dot(squ, np.linspace(1, 1, nc))
-			o = np.argsort(s)
-			c = o[0]
-
-	        # update step
-			gamma_m = np.outer(Gamma(c), np.linspace(1, 1, nc))
-			neurons = neurons - diff * gamma_m
-
-			# self.animation.append(neurons.tolist())
-		
-		self.neurons = neurons
-
+	
 	# neighborhood function
 	@staticmethod
 	@njit()
@@ -281,6 +192,10 @@ class map:
 			neurons = np.random.uniform(-1, 1, (nr,nc))
 			# neurons = np.reshape(v, (nr, nc)) # rearrange the vector as matrix
 
+		alpha = self.alpha # starting learning rate
+		if self.alpha_type == 1:
+			alpha_freq = self.train // 16 # how often to decay the learning rate
+
 	    # compute the initial neighborhood size and step
 		nsize_max = max(self.xdim, self.ydim) + 1
 		nsize_min = 8
@@ -313,7 +228,7 @@ class map:
 		i = 0
   
 		# implement momentum-based gradient descent
-		# momentum_decay_rate = self.decay_rate
+		# momentum_decay_rate = self.momentum_decay_rate
 		diff = 0.
 
 		# for epoch in range(self.step_counter, self.train):
@@ -362,11 +277,16 @@ class map:
 			if epoch % nsize_freq == 0 and nsize > 8:
 				nsize = nsize_max - epoch // nsize_freq
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
+
+			# decay the learning rate every frequ epochs
+			if epoch % nsize_freq == 0 and self.alpha_type == 1:
+				alpha *= 0.75
+				print(f"Decaying learning rate to {alpha} at epoch {epoch}", flush=True)
     
 			# save neuron maps sparingly
 			if epoch % 1000000 == 0 and epoch != 0:
 				print("Saving neurons at epoch ", epoch, flush=True)
-				np.save(f"neurons_{epoch}_{self.xdim}{self.ydim}_{self.alpha}_{self.train}_{self.decay_rate}.npy", neurons)	
+				np.save(f"neurons_{epoch}_{self.xdim}{self.ydim}_{self.alpha}_{self.train}_{self.momentum_decay_rate}.npy", neurons)	
     
 			epoch += 1
 
