@@ -279,7 +279,7 @@ class map:
 				print(f"Shrinking neighborhood size to {nsize} at epoch {epoch}", flush=True)
 
 			# decay the learning rate every frequ epochs
-			if epoch % nsize_freq == 0 and self.alpha_type == 1:
+			if epoch % alpha_freq == 0 and self.alpha_type == 1:
 				alpha *= 0.75
 				print(f"Decaying learning rate to {alpha} at epoch {epoch}", flush=True)
     
