@@ -269,7 +269,7 @@ class map:
 			c = np.argmin(s)
 
 	        # update step
-			gamma_m = np.outer(self.Gamma(c, m2Ds, self.alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
+			gamma_m = np.outer(self.Gamma(c, m2Ds, alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
 			# neurons -= (diff + momentum) * gamma_m
 			neurons -= diff * gamma_m
 
