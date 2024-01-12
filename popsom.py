@@ -247,7 +247,7 @@ class map:
 				neurons_old = neurons.copy()
     
 				# Terminate if the network has not changed much in the last train//100 epochs
-				if linearize_change < 1e-1:
+				if linearize_change < 1e-4:
 					print("Terminating from small changes at epoch ", epoch, flush=True)
 					self.epoch = epoch
 					break
