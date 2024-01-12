@@ -194,7 +194,7 @@ class map:
 
 		alpha = self.alpha # starting learning rate
 		if self.alpha_type == 1:
-			alpha_freq = self.train // 16 # how often to decay the learning rate
+			alpha_freq = self.train // 25 # how often to decay the learning rate
 
 	    # compute the initial neighborhood size and step
 		nsize_max = max(self.xdim, self.ydim) + 1
