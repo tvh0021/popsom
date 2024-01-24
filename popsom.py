@@ -223,31 +223,38 @@ class map:
 		# Save the stepping of the neurons for termination condition
 		neurons_old = neurons.copy()
 		frequency = 1000
-		self.weight_history = np.zeros((self.train//frequency, 2))
-		self.feature_weight_history = np.zeros((self.train//frequency, dc))
+		# self.weight_history = np.zeros((self.train//frequency, 2))
+		# self.feature_weight_history = np.zeros((self.train//frequency, dc))
 		i = 0
   
 		# implement momentum-based gradient descent
 		# momentum_decay_rate = self.momentum_decay_rate
 		diff = 0.
 
+		# history of the loss function
+		self.loss_history = np.zeros((self.train, dc))
+		self.average_loss = np.zeros((self.train//frequency, dc))
+
 		# for epoch in range(self.step_counter, self.train):
 		while True:
 	        # hood size decreases in disrete nsize steps
 			if (epoch % frequency == 0) & (epoch != 0):
 				# print(f"Epoch {epoch} is divisible by {frequency}", flush=True)
-				network_change = (neurons - neurons_old)**2
-				linearize_change = np.sum(network_change)
-				per_feature_change = np.apply_over_axes(np.sum, network_change, axes=[0,1])
+				# network_change = (neurons - neurons_old)**2
+				# linearize_change = np.sum(network_change)
+				# per_feature_change = np.apply_over_axes(np.sum, network_change, axes=[0,1])
 
 				# i = epoch // frequency - 1
-				self.weight_history[i,:] = [epoch, linearize_change]
-				self.feature_weight_history[i,:] = per_feature_change
-				i += 1
-				neurons_old = neurons.copy()
+				# self.weight_history[i,:] = [epoch, linearize_change]
+				# self.feature_weight_history[i,:] = per_feature_change
+				# neurons_old = neurons.copy()
+				# i += 1
+				
+				this_average_loss = np.mean(self.loss_history[epoch-frequency:epoch], axis=0) # average loss over the last frequency epochs
+				self.average_loss[epoch//frequency-1,:] = this_average_loss
     
 				# Terminate if the network has not changed much in the last train//100 epochs
-				if linearize_change < 1e-4:
+				if np.sum(this_average_loss**2)  < 1e-4:
 					print("Terminating from small changes at epoch ", epoch, flush=True)
 					self.epoch = epoch
 					break
@@ -267,6 +274,8 @@ class map:
 			squ = diff**2
 			s = np.sum(squ, axis=1)
 			c = np.argmin(s)
+
+			self.loss_history[epoch,:] = s[c]
 
 	        # update step
 			gamma_m = np.outer(self.Gamma(c, m2Ds, alpha, nsize), np.ones(nc)) # could maybe speed this up with np.tile, but more complicated than it's worth
@@ -291,7 +300,6 @@ class map:
 			epoch += 1
 
 			# self.animation.append(neurons.tolist())
-		
 		self.neurons = neurons
 		
 	def convergence(self, conf_int=.95, k=50, verb=False, ks=False):
